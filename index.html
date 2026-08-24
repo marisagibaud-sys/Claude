@@ -532,7 +532,26 @@ function hideToast() { $("#toast").classList.remove("show"); }
 
 /* ---------------- items ---------------- */
 
+/* a card is a CONVERSATION: replies roll into the existing card and bump its msgs count */
+const normSub = s => String(s || "").replace(/^\s*(?:(?:re|fw|fwd|aw|sv|vs|antw|wg)\s*:\s*)+/i, "").replace(/\s+/g, " ").trim().toLowerCase();
+
+function findThread(fields) {
+  if (fields.cid) { const hit = S.items.find(x => x.cid === fields.cid); if (hit) return hit; }
+  const ns = normSub(fields.sub);
+  if (ns.length >= 10) return S.items.find(x => normSub(x.sub) === ns) || null;
+  return null;
+}
+
 function addItem(fields, catId, via) {
+  const mid = fields.mid || null;
+  if (mid && S.items.some(x => x.mid === mid || (x.mids || []).includes(mid))) return { dup: true };
+  const thread = findThread(fields);
+  if (thread) {
+    thread.msgs = (thread.msgs || 1) + 1;
+    if (mid) { thread.mids = thread.mids || []; if (thread.mids.length < 50) thread.mids.push(mid); }
+    if (fields.cid && !thread.cid) thread.cid = fields.cid;
+    return { it: thread, merged: true };
+  }
   const it = {
     id: uid(),
     cat: catById(catId).id,
@@ -540,26 +559,34 @@ function addItem(fields, catId, via) {
     sub: (fields.sub || "(no subject)").slice(0, 300),
     from: (fields.from || "").slice(0, 200),
     rcv: fields.rcv || null,
-    mid: fields.mid || null,
+    mid: mid,
+    cid: fields.cid || null,
+    msgs: 1,
     note: fields.note || "",
     via: via,
     by: lsGet("vb-name") || "",
     added: new Date().toISOString()
   };
-  if (it.mid && S.items.some(x => x.mid === it.mid)) return null; // duplicate message
   S.items.unshift(it);
-  return it;
+  return { it, merged: false };
 }
 
 function quickAdd(fields, catId, via) {
-  const it = addItem(fields, catId, via);
-  if (!it) { toast("Already on the board — skipped duplicate."); return; }
+  const r = addItem(fields, catId, via);
+  if (r.dup) { toast("Already on the board — skipped duplicate."); return; }
   commit(4000); // leave the undo window open before the shared save
-  const cname = catById(it.cat).name;
-  toast(`Added “${it.sub.slice(0, 48)}” to ${cname}`, "Undo", () => {
-    S.items = S.items.filter(x => x.id !== it.id);
-    commit();
-  });
+  if (r.merged) {
+    toast(`Rolled into thread “${r.it.sub.slice(0, 44)}” — ${r.it.msgs} messages`, "Undo", () => {
+      r.it.msgs = Math.max(1, (r.it.msgs || 1) - 1);
+      if (fields.mid && r.it.mids) r.it.mids = r.it.mids.filter(m => m !== fields.mid);
+      commit();
+    });
+  } else {
+    toast(`Added “${r.it.sub.slice(0, 48)}” to ${catById(r.it.cat).name}`, "Undo", () => {
+      S.items = S.items.filter(x => x.id !== r.it.id);
+      commit();
+    });
+  }
 }
 
 /* ---------------- parsers ---------------- */
@@ -738,7 +765,7 @@ function renderTiles() {
     : `${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta)} vs last week (${cLast})`;
   $("#tiles").innerHTML = `
     <div class="tile"><div class="label">This week</div><div class="value num">${cThis}</div><div class="sub num">${esc(deltaTxt)}</div></div>
-    <div class="tile"><div class="label">Total tracked</div><div class="value num">${S.items.length}</div><div class="sub">across ${allCats().filter(c => counts[c.id]).length || 0} categories</div></div>
+    <div class="tile"><div class="label">Conversations</div><div class="value num">${S.items.length}</div><div class="sub num">${S.items.reduce((a, i) => a + (i.msgs || 1), 0)} messages across ${allCats().filter(c => counts[c.id]).length || 0} categories</div></div>
     <div class="tile"><div class="label">Top category</div><div class="value" style="font-size:19px;line-height:1.3;padding-top:6px">${top && top[1] ? `<span class="dot" style="display:inline-block;background:${catColor(top[0])};margin-right:7px"></span>${esc(top[0].name)}` : "—"}</div><div class="sub num">${top && top[1] ? top[1] + " items" : "nothing tracked yet"}</div></div>
     <div class="tile"><div class="label">Auto-filed from Outlook</div><div class="value num">${auto}</div><div class="sub">via category → automation</div></div>`;
 }
@@ -809,8 +836,10 @@ function renderBoard() {
     const cards = items.map(it => {
       const d = it.rcv || it.added;
       const when = fmtDay(new Date(d));
-      const who = it.via === "auto" ? '<span class="auto-chip">auto</span>'
-        : it.by ? `<span class="auto-chip" title="Added by">${esc(it.by)}</span>` : "";
+      const nmsg = it.msgs || 1;
+      const who = (nmsg > 1 ? `<span class="auto-chip" title="${nmsg} messages in this thread">×${nmsg}</span>` : "")
+        + (it.via === "auto" ? '<span class="auto-chip">auto</span>'
+        : it.by ? `<span class="auto-chip" title="Added by">${esc(it.by)}</span>` : "");
       return `<article class="card" draggable="${RO ? "false" : "true"}" data-id="${it.id}" tabindex="0" aria-label="${esc(it.sub)}">
         <div class="sub">${esc(it.sub)}</div>
         <div class="meta">${srcIcon(it.src)}<span class="from">${esc(it.from || (it.src === "teams" ? "Teams message" : "—"))}</span><span class="num" style="flex:none">${esc(when)}</span>${who}</div>
@@ -1076,10 +1105,10 @@ function openCatModal(catId) {
 /* ---------------- CSV export ---------------- */
 
 $("#btn-export").addEventListener("click", async () => {
-  const rows = [["added", "received", "category", "outlook_category", "source", "subject", "from", "via", "added_by", "note"]];
+  const rows = [["added", "received", "category", "outlook_category", "source", "subject", "from", "messages", "via", "added_by", "note"]];
   for (const it of S.items) {
     const c = catById(it.cat);
-    rows.push([it.added, it.rcv || "", c.name, c.outlook || "", it.src, it.sub, it.from, it.via, it.by || "", it.note || ""]);
+    rows.push([it.added, it.rcv || "", c.name, c.outlook || "", it.src, it.sub, it.from, it.msgs || 1, it.via, it.by || "", it.note || ""]);
   }
   const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
   if (!dl) dl = await window.claude?.use?.("downloads");
@@ -1107,7 +1136,7 @@ function renderDrawer() {
   const status = m.lastSweep
     ? `<div class="status-line"><span class="sdot ok"></span><span>Automation active — last sweep ${esc(new Date(m.lastSweep).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}, ${m.swept || 0} item${m.swept === 1 ? "" : "s"} auto-filed so far.</span></div>`
     : `<div class="status-line"><span class="sdot idle"></span><span>No automated sweep has run yet. Once the Power Automate flow starts dropping files, Claude files them here on its schedule (weekdays, every 2 hours).</span></div>`;
-  const sample = JSON.stringify({ subject: "Comp review — Fabrikam req", from: "Dana Reyes <dana@fabrikam.com>", received: "2026-08-24T14:02:00Z", category: "Promotion", id: "unique-message-id" }, null, 2);
+  const sample = JSON.stringify({ subject: "Comp review — Fabrikam req", from: "Dana Reyes <dana@fabrikam.com>", received: "2026-08-24T14:02:00Z", category: "Promotion", id: "unique-message-id", cid: "outlook-conversation-id" }, null, 2);
   $("#drawer-body").innerHTML = `
     <h3>Auto-filing from Outlook</h3>
     ${status}
@@ -1123,7 +1152,7 @@ function renderDrawer() {
     <ol>
       <li>On GitHub, create a <strong>fine-grained personal access token</strong> limited to the tracker repo with <em>Contents: Read and write</em> (github.com → Settings → Developer settings → Fine-grained tokens).</li>
       <li>In <strong>Power Automate</strong>, create a scheduled flow (every 15 min) with an <em>Office&nbsp;365 Outlook → Send an HTTP request</em> step:<br>
-      <code>GET https://graph.microsoft.com/v1.0/me/messages?$filter=categories/any(c:c eq 'Promotion') and not(categories/any(c:c eq 'Logged'))&amp;$select=id,subject,from,receivedDateTime,categories</code></li>
+      <code>GET https://graph.microsoft.com/v1.0/me/messages?$filter=categories/any(c:c eq 'Promotion') and not(categories/any(c:c eq 'Logged'))&amp;$select=id,conversationId,subject,from,receivedDateTime,categories</code></li>
       <li>For each result, an <em>HTTP</em> step: <code>PUT https://api.github.com/repos/marisagibaud-sys/Claude/contents/inbox/@{guid()}.json</code> with header <code>Authorization: Bearer &lt;your token&gt;</code> and body <code>{"message":"log email","branch":"claude/email-teams-drag-drop-tracker-2qgei7","content":"&lt;base64 of the JSON below&gt;"}</code>:</li>
     </ol>
     <pre>${esc(sample)}</pre>
