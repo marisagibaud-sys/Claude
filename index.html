@@ -1,7 +1,7 @@
 <title>Triage Volume Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400;500;600&display=swap">
-<style>
+<style id="vb-css">
   :root {
     color-scheme: light;
     --page: #f9f9f7;
@@ -272,7 +272,7 @@
     background: var(--page); border: 1px solid var(--line); border-radius: 8px;
     padding: 10px; overflow-x: auto; margin: 6px 0;
   }
-  #drawer code { background: var(--page); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  #drawer code { background: var(--page); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
   .status-line {
     display: flex; align-items: flex-start; gap: 9px;
     border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 8px 0;
@@ -280,13 +280,7 @@
   }
   .status-line .sdot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex: none; }
   .sdot.ok { background: #0ca30c; }
-  .sdot.warn { background: #fab219; }
-  .sdot.bad { background: var(--danger); }
   .sdot.idle { background: var(--muted); }
-  .staged-list { border: 1px solid var(--line); border-radius: 10px; margin: 8px 0; overflow: hidden; }
-  .staged-list .sl-row { display: flex; gap: 8px; padding: 7px 11px; font-size: 12.5px; border-top: 1px solid var(--line); color: var(--ink-2); }
-  .staged-list .sl-row:first-child { border-top: none; }
-  .staged-list .sl-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .field-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
   .field-row input { flex: 1; min-width: 0; }
 
@@ -329,9 +323,9 @@
   }
 </style>
 
-<script id="vb-default-state" type="application/json">
+<script id="vb-state" type="application/json">
 {
-  "v": 1,
+  "v": 2,
   "cats": [
     { "id": "prm", "name": "Promotion",         "outlook": "Promotion",         "slot": 0 },
     { "id": "oth", "name": "Other",             "outlook": "Other",             "slot": 1 },
@@ -344,89 +338,93 @@
     { "id": "bmk", "name": "Benchmarking",      "outlook": "Benchmarking",      "slot": "n" }
   ],
   "items": [],
-  "settings": { "folder": "/Claude/Email Tracker/Inbox", "processed": [] }
+  "meta": { "lastSweep": null, "swept": 0 },
+  "settings": {}
 }
 </script>
 
-<div class="wrap">
-  <header class="top">
-    <div class="wordmark">
-      <span class="glyph" aria-hidden="true">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 4.5 7.5 8.5 13.5 4.5M2.5 2.5h10a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </span>
-      Triage Volume Board
-    </div>
-    <div class="spacer"></div>
-    <span class="chip" id="save-chip" hidden></span>
-    <span class="chip ro" id="ro-chip" hidden>View only</span>
-    <button class="btn" id="btn-drawer">Automation</button>
-    <button class="btn" id="btn-export">Export CSV</button>
-    <button class="btn primary" id="btn-add">+ Add item</button>
-  </header>
-
-  <section class="tiles" id="tiles" aria-label="Volume summary"></section>
-
-  <section class="panel">
-    <h2>Weekly volume</h2>
-    <p class="hint">Items by week received, split by category — the read on where volume is going.</p>
-    <div id="chart"></div>
-    <div class="legend" id="legend"></div>
-  </section>
-
-  <div class="board-head">
-    <h2>Board</h2>
-    <span class="hint">Drag cards between columns to recategorize · drop emails straight onto a column</span>
-  </div>
-  <section class="board" id="board" aria-label="Category board"></section>
-
-  <p class="foot-hint">
-    <span>Drop <strong>.eml</strong> / <strong>.msg</strong> files or selected text onto a column</span>·
-    <span><kbd>Ctrl</kbd>+<kbd>V</kbd> anywhere to paste a copied email or Teams message</span>·
-    <span>Apply an Outlook category and the automation files it here for you</span>
-  </p>
-</div>
-
-<div id="dropveil" aria-hidden="true"><div class="msg">Release over a column to categorize — or anywhere to review first</div></div>
-<div id="tip" role="tooltip"></div>
-
-<aside id="drawer" aria-label="Automation and settings">
-  <div class="d-head">
-    <h2>Automation &amp; settings</h2>
-    <button class="btn small" id="btn-drawer-close">Close</button>
-  </div>
-  <div class="d-body" id="drawer-body"></div>
-</aside>
-
-<div id="veil"><div class="modal" role="dialog" aria-modal="true" id="modal"></div></div>
-<div id="toast"><span id="toast-msg"></span><button id="toast-act" hidden></button></div>
-
-<script>
+<script id="vb-app">
 (() => {
 "use strict";
 
+/* ---------------- shell markup (built by JS so the document can be
+   regenerated deterministically from state for artifact publishes) ---------------- */
+
+const SHELL = [
+'<div class="wrap">',
+'  <header class="top">',
+'    <div class="wordmark">',
+'      <span class="glyph" aria-hidden="true">',
+'        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 4.5 7.5 8.5 13.5 4.5M2.5 2.5h10a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+'      </span>',
+'      Triage Volume Board',
+'    </div>',
+'    <div class="spacer"></div>',
+'    <span class="chip" id="save-chip" hidden></span>',
+'    <span class="chip ro" id="ro-chip" hidden>View only</span>',
+'    <button class="btn" id="btn-drawer">Automation</button>',
+'    <button class="btn" id="btn-export">Export CSV</button>',
+'    <button class="btn primary" id="btn-add">+ Add item</button>',
+'  </header>',
+'  <section class="tiles" id="tiles" aria-label="Volume summary"></section>',
+'  <section class="panel">',
+'    <h2>Weekly volume</h2>',
+'    <p class="hint">Items by week received, split by category — the read on where volume is going.</p>',
+'    <div id="chart"></div>',
+'    <div class="legend" id="legend"></div>',
+'  </section>',
+'  <div class="board-head">',
+'    <h2>Board</h2>',
+'    <span class="hint">Drag cards between columns to recategorize · drop emails straight onto a column</span>',
+'  </div>',
+'  <section class="board" id="board" aria-label="Category board"></section>',
+'  <p class="foot-hint">',
+'    <span>Drop <strong>.eml</strong> / <strong>.msg</strong> files or selected text onto a column</span>·',
+'    <span><kbd>Ctrl</kbd>+<kbd>V</kbd> anywhere to paste a copied email or Teams message</span>·',
+'    <span>Categorized Outlook mail is filed here automatically</span>',
+'  </p>',
+'</div>',
+'<div id="dropveil" aria-hidden="true"><div class="msg">Release over a column to categorize — or anywhere to review first</div></div>',
+'<div id="tip" role="tooltip"></div>',
+'<aside id="drawer" aria-label="Automation and settings">',
+'  <div class="d-head">',
+'    <h2>Automation &amp; settings</h2>',
+'    <button class="btn small" id="btn-drawer-close">Close</button>',
+'  </div>',
+'  <div class="d-body" id="drawer-body"></div>',
+'</aside>',
+'<div id="veil"><div class="modal" role="dialog" aria-modal="true" id="modal"></div></div>',
+'<div id="toast"><span id="toast-msg"></span><button id="toast-act" hidden></button></div>'
+].join("\n");
+
+document.body.insertAdjacentHTML("afterbegin", SHELL);
+
 /* ---------------- state ---------------- */
 
-const DEFAULT_STATE = JSON.parse(document.getElementById("vb-default-state").textContent);
-let S = DEFAULT_STATE;
+let S = migrate(JSON.parse(document.getElementById("vb-state").textContent));
 let RO = false;              // read-only view
 let savingUnavailable = false;
-let art = null, mcp = null, dl = null;
+let art = null, dl = null;
 
 const $ = (sel, el) => (el || document).querySelector(sel);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const CAT_U = { id: "u", name: "Uncategorized", outlook: "", slot: "u" };
-const catColor = c => c.slot === "u" ? "var(--cat-u)" : `var(--cat-${c.slot})`;
+const catColor = c => `var(--cat-${c.slot})`;
 const allCats = () => [...S.cats, CAT_U];
 const catById = id => allCats().find(c => c.id === id) || CAT_U;
 const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const ssGet = k => { try { return sessionStorage.getItem(k); } catch { return null; } };
+const ssSet = (k, v) => { try { sessionStorage.setItem(k, v); } catch {} };
+const ssDel = k => { try { sessionStorage.removeItem(k); } catch {} };
 
 function migrate(raw) {
-  if (!raw || typeof raw !== "object" || !Array.isArray(raw.cats) || !Array.isArray(raw.items)) return DEFAULT_STATE;
-  // an untouched board on the original placeholder categories picks up the current defaults
-  if (!raw.items.length && raw.cats.length === 4 && raw.cats.every(c => /^c[1-4]$/.test(c.id))) return DEFAULT_STATE;
-  raw.settings = Object.assign({ folder: "/Claude/Email Tracker/Inbox", processed: [] }, raw.settings || {});
+  if (!raw || typeof raw !== "object" || !Array.isArray(raw.cats) || !Array.isArray(raw.items)) raw = { cats: [], items: [] };
+  raw.v = 2;
+  raw.meta = Object.assign({ lastSweep: null, swept: 0 }, raw.meta || {});
+  raw.settings = raw.settings || {};
+  delete raw.settings.folder; delete raw.settings.processed; // dropbox-era fields
   return raw;
 }
 
@@ -441,7 +439,27 @@ const weekKey = d => { const w = weekStart(d); return w.getFullYear() + "-" + St
 const itemDate = it => { const d = new Date(it.rcv || it.added); return isNaN(d) ? new Date(it.added) : d; };
 const fmtDay = d => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
-/* ---------------- persistence (artifact files publish) ---------------- */
+/* ---------------- self-publish (the document is a function of state) ----------------
+   The page never serializes its live DOM. It rebuilds the complete canonical
+   document from: static head constants, the style/script elements' parse-time
+   text, and the current state — then publishes that via the artifact capability. */
+
+const HEAD_STATIC =
+  '<meta charset="utf-8">' +
+  '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+  '<title>Triage Volume Board</title>' +
+  '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Instrument+Sans:wght@400;500;600&amp;display=swap">';
+
+function assemble(stateJson) {
+  const css = document.getElementById("vb-css").textContent;
+  const app = document.getElementById("vb-app").textContent;
+  const safe = stateJson.replace(/<\//g, "<\\/"); // "\/" is a legal JSON escape; keeps "<\/script" out of the markup
+  return "<!doctype html>\n<html><head>" + HEAD_STATIC +
+    '<style id="vb-css">' + css + "</style></head><body>" +
+    '<script id="vb-state" type="application/json">' + safe + "<\/script>" +
+    '<script id="vb-app">' + app + "<\/script></body></html>";
+}
 
 let saveTimer = null, saveInFlight = false, saveDirty = false;
 
@@ -452,13 +470,13 @@ function setRO() {
   render();
 }
 
-function commit() { render(); scheduleSave(); }
+function commit(delay) { render(); scheduleSave(delay); }
 
-function scheduleSave() {
+function scheduleSave(delay) {
   if (RO || savingUnavailable) return;
   saveDirty = true;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(doSave, 1000);
+  saveTimer = setTimeout(doSave, delay || 1200);
 }
 
 async function doSave(retried) {
@@ -467,10 +485,12 @@ async function doSave(retried) {
   chip("Saving…");
   try {
     if (!art) art = await window.claude?.use?.("artifact");
-    if (!art) { savingUnavailable = true; chip("Shared saving unavailable here", 4000); return; }
-    await art.publish({ "data/state.json": JSON.stringify(S) });
-    chip("Saved for everyone", 2200);
+    if (!art) { savingUnavailable = true; chip("Not connected — changes stay on this screen only", 5000); return; }
+    stashUi(); ssSet("vb-saved", "1");
+    await art.publish(assemble(JSON.stringify(S)));
+    // on success this view reloads to the new version
   } catch (e) {
+    ssDel("vb-saved");
     const code = e && e.code;
     if (code === "conflict") { /* view is reloading to the winning version */ }
     else if (code === "not_writer" || code === "not_granted" || code === "consent_required") { setRO(); chip("View only — changes not saved", 4000); }
@@ -483,6 +503,10 @@ async function doSave(retried) {
     saveInFlight = false;
     if (saveDirty) scheduleSave();
   }
+}
+
+function stashUi() {
+  ssSet("vb-ui", JSON.stringify({ scroll: scrollY, drawer: $("#drawer").classList.contains("open") }));
 }
 
 function chip(msg, ttl) {
@@ -530,7 +554,7 @@ function addItem(fields, catId, via) {
 function quickAdd(fields, catId, via) {
   const it = addItem(fields, catId, via);
   if (!it) { toast("Already on the board — skipped duplicate."); return; }
-  commit();
+  commit(4000); // leave the undo window open before the shared save
   const cname = catById(it.cat).name;
   toast(`Added “${it.sub.slice(0, 48)}” to ${cname}`, "Undo", () => {
     S.items = S.items.filter(x => x.id !== it.id);
@@ -688,31 +712,6 @@ function matchCategory(label) {
   return allCats().find(c => norm(c.outlook) === want) || allCats().find(c => norm(c.name) === want) || null;
 }
 
-function parseImported(title, text) {
-  try {
-    const j = JSON.parse(text);
-    if (j && typeof j === "object") {
-      const label = Array.isArray(j.categories) ? j.categories.find(x => matchCategory(x)) : (j.category || j.outlookCategory);
-      const d = j.received || j.receivedDateTime || j.date;
-      const dd = d ? new Date(d) : null;
-      return {
-        fields: {
-          sub: j.subject || j.title || title,
-          from: j.from && j.from.emailAddress ? `${j.from.emailAddress.name || ""} <${j.from.emailAddress.address || ""}>` : (typeof j.from === "string" ? j.from : j.sender || ""),
-          rcv: dd && !isNaN(dd) ? dd.toISOString() : null,
-          mid: j.id || j.internetMessageId || null,
-          src: j.type === "teams" ? "teams" : "email"
-        },
-        cat: matchCategory(label)
-      };
-    }
-  } catch {}
-  if (/^(received|from|subject|date|to):/im.test(text)) { const f = parseEml(text); return { fields: f, cat: null }; }
-  const f = parseLoose(text, "");
-  f.sub = f.sub || title;
-  return { fields: f, cat: null };
-}
-
 /* ---------------- rendering ---------------- */
 
 const srcIcon = src => src === "teams"
@@ -741,7 +740,7 @@ function renderTiles() {
     <div class="tile"><div class="label">This week</div><div class="value num">${cThis}</div><div class="sub num">${esc(deltaTxt)}</div></div>
     <div class="tile"><div class="label">Total tracked</div><div class="value num">${S.items.length}</div><div class="sub">across ${allCats().filter(c => counts[c.id]).length || 0} categories</div></div>
     <div class="tile"><div class="label">Top category</div><div class="value" style="font-size:19px;line-height:1.3;padding-top:6px">${top && top[1] ? `<span class="dot" style="display:inline-block;background:${catColor(top[0])};margin-right:7px"></span>${esc(top[0].name)}` : "—"}</div><div class="sub num">${top && top[1] ? top[1] + " items" : "nothing tracked yet"}</div></div>
-    <div class="tile"><div class="label">Auto-filed from Outlook</div><div class="value num">${auto}</div><div class="sub">via category → Dropbox</div></div>`;
+    <div class="tile"><div class="label">Auto-filed from Outlook</div><div class="value num">${auto}</div><div class="sub">via category → automation</div></div>`;
 }
 
 function renderChart() {
@@ -810,9 +809,11 @@ function renderBoard() {
     const cards = items.map(it => {
       const d = it.rcv || it.added;
       const when = fmtDay(new Date(d));
+      const who = it.via === "auto" ? '<span class="auto-chip">auto</span>'
+        : it.by ? `<span class="auto-chip" title="Added by">${esc(it.by)}</span>` : "";
       return `<article class="card" draggable="${RO ? "false" : "true"}" data-id="${it.id}" tabindex="0" aria-label="${esc(it.sub)}">
         <div class="sub">${esc(it.sub)}</div>
-        <div class="meta">${srcIcon(it.src)}<span class="from">${esc(it.from || (it.src === "teams" ? "Teams message" : "—"))}</span><span class="num" style="flex:none">${esc(when)}</span>${it.via === "auto" ? '<span class="auto-chip">auto</span>' : ""}</div>
+        <div class="meta">${srcIcon(it.src)}<span class="from">${esc(it.from || (it.src === "teams" ? "Teams message" : "—"))}</span><span class="num" style="flex:none">${esc(when)}</span>${who}</div>
         ${RO ? "" : `<div class="acts">
           <button data-act="edit" title="Edit item" aria-label="Edit">✎</button>
           <button data-act="del" title="Remove item" aria-label="Remove">✕</button>
@@ -862,7 +863,7 @@ document.addEventListener("click", e => {
   if (card && b.dataset.act === "del") {
     const it = S.items.find(x => x.id === card.dataset.id); if (!it) return;
     S.items = S.items.filter(x => x.id !== it.id);
-    commit();
+    commit(4000);
     toast(`Removed “${it.sub.slice(0, 48)}”`, "Undo", () => { S.items.unshift(it); commit(); });
   }
   if (card && b.dataset.act === "edit") openItemModal(card.dataset.id);
@@ -955,7 +956,7 @@ document.addEventListener("paste", e => {
 /* ---------------- modals ---------------- */
 
 function openModal(html) { $("#modal").innerHTML = html; $("#veil").classList.add("open"); const f = $("#modal input, #modal select"); if (f) f.focus(); }
-function closeModal() { $("#veil").classList.remove("open"); try { sessionStorage.removeItem("vb-draft"); } catch {} }
+function closeModal() { $("#veil").classList.remove("open"); ssDel("vb-draft"); }
 $("#veil").addEventListener("click", e => { if (e.target.id === "veil") closeModal(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeDrawer(); } });
 
@@ -965,7 +966,8 @@ function catOptions(sel) {
 
 function openAddModal(fields, via, editId) {
   fields = fields || {};
-  try { if (!editId) sessionStorage.setItem("vb-draft", JSON.stringify({ fields, via })); } catch {}
+  if (!editId) ssSet("vb-draft", JSON.stringify({ fields, via }));
+  const needName = !lsGet("vb-name");
   openModal(`
     <h2>${editId ? "Edit item" : "Add to the board"}</h2>
     <label for="f-sub">Subject / summary</label>
@@ -993,6 +995,9 @@ function openAddModal(fields, via, editId) {
     </div>
     <label for="f-note">Note (optional)</label>
     <input id="f-note" value="${esc(fields.note || "")}" maxlength="300">
+    ${needName && !editId ? `
+    <label for="f-by">Your initials (shown on cards you add — remembered on this device)</label>
+    <input id="f-by" maxlength="12" placeholder="e.g. MG">` : ""}
     <div class="m-acts">
       <button class="btn" data-m="cancel">Cancel</button>
       <button class="btn primary" data-m="save">${editId ? "Save" : "Add item"}</button>
@@ -1000,6 +1005,8 @@ function openAddModal(fields, via, editId) {
   $("#modal").onclick = e => {
     const b = e.target.closest("button[data-m]"); if (!b) return;
     if (b.dataset.m === "cancel") return closeModal();
+    const byEl = $("#f-by");
+    if (byEl && byEl.value.trim()) lsSet("vb-name", byEl.value.trim());
     const f = {
       sub: $("#f-sub").value.trim(), from: $("#f-from").value.trim(),
       src: $("#f-src").value, note: $("#f-note").value.trim(),
@@ -1032,7 +1039,7 @@ function openCatModal(catId) {
     <label for="c-name">Name on the board</label>
     <input id="c-name" value="${esc(c ? c.name : "")}" maxlength="40" placeholder="e.g. Escalations">
     <label for="c-ol">Outlook category it maps to</label>
-    <input id="c-ol" value="${esc(c ? c.outlook : "")}" maxlength="60" placeholder="e.g. Red category — used by the automation">
+    <input id="c-ol" value="${esc(c ? c.outlook : "")}" maxlength="60" placeholder="Exact Outlook category name — used by the automation">
     <label>Color</label>
     <div class="swatches" id="c-swatches">
       ${SLOTS.map(s => `<button type="button" data-slot="${s}" aria-pressed="${s === slot}" aria-label="${s === "n" ? "Neutral" : "Color " + (s + 1)}" style="background:var(--cat-${s});${usedSlots.has(s) && (!c || c.slot !== s) ? "opacity:.25;pointer-events:none" : ""}"></button>`).join("")}
@@ -1087,96 +1094,6 @@ $("#btn-export").addEventListener("click", async () => {
   }
 });
 
-/* ---------------- Dropbox auto-import (mcp) ---------------- */
-
-const dbx = { status: "init", server: null, listName: null, fetchName: null, staged: [], failed: [], unsub: null, lastSeen: null, importing: false };
-
-async function initMcp() {
-  mcp = await window.claude?.use?.("mcp");
-  if (!mcp) { dbx.status = "unavailable"; renderDrawer(); return; }
-  try {
-    const lt = await mcp.listTools();
-    const srv = (lt.servers || []).find(s => /dropbox/i.test(s.server));
-    if (!srv) { dbx.status = "no-connector"; }
-    else if (srv.authStatus === "needs_reauth") { dbx.status = "reauth"; dbx.server = srv.server; }
-    else if (!srv.tools || !srv.tools.length) { dbx.status = "no-connector"; }
-    else {
-      const pick = want => { const t = srv.tools.find(x => x.name === want) || srv.tools.find(x => x.name.split(/[.:]/).pop() === want); return t && t.name; };
-      dbx.server = srv.server;
-      dbx.listName = pick("list_folder");
-      dbx.fetchName = pick("fetch");
-      if (!dbx.listName || !dbx.fetchName) dbx.status = "no-tools";
-      else { dbx.status = "watching"; startWatch(); }
-    }
-  } catch (e) { mapMcpError(e); }
-  renderDrawer();
-}
-
-function mapMcpError(e) {
-  const code = e && e.code;
-  if (code === "needs_reauth") dbx.status = "reauth";
-  else if (code === "server_not_connected" || code === "selection_required") dbx.status = "no-connector";
-  else if (code === "blocked_by_policy" || code === "approval_required") dbx.status = "blocked";
-  else if (code === "not_granted" || code === "capability_disabled" || code === "capability_removed") dbx.status = "unavailable";
-  else if (code === "tool_error") { dbx.status = "folder-missing"; dbx.err = (e && e.message || "").slice(0, 200); }
-  else dbx.status = "error";
-}
-
-function startWatch() {
-  if (dbx.unsub) { try { dbx.unsub(); } catch {} dbx.unsub = null; }
-  if (!mcp || !dbx.listName) return;
-  const input = { path: S.settings.folder, recursive: false, object_types: ["file"] };
-  dbx.unsub = mcp.watchTool(dbx.server, dbx.listName, input, ev => {
-    if (ev.type === "error") {
-      const code = ev.error && ev.error.code;
-      if (code === "needs_reauth" || code === "server_not_connected" || code === "blocked_by_policy" || code === "approval_required") {
-        dbx.staged = []; mapMcpError(ev.error);
-      } else if (code === "tool_error") { dbx.status = "folder-missing"; }
-      // transient errors: keep last-good staging
-    } else {
-      const p = ev.result && ev.result.payload;
-      const entries = p && Array.isArray(p.entries) ? p.entries : [];
-      const done = new Set(S.settings.processed);
-      dbx.staged = entries.filter(f =>
-        f.object_type === "file" && !done.has(f.file_id) && /\.(json|eml|txt|md)$/i.test(f.name || ""));
-      dbx.lastSeen = ev.result.cache ? ev.result.cache.storedAt : Date.now();
-      dbx.status = "watching";
-    }
-    renderDrawer();
-  }, { refetchInterval: 120000, cache: { staleTime: 60000 } });
-}
-
-async function runImport() {
-  if (dbx.importing || RO) return;
-  dbx.importing = true; renderDrawer();
-  const batch = dbx.staged.slice(0, 25);
-  let ok = 0, dup = 0;
-  dbx.failed = [];
-  for (const f of batch) {
-    try {
-      const r = await mcp.callTool(dbx.server, dbx.fetchName, { id: f.file_id });
-      const p = r.payload || {};
-      const { fields, cat } = parseImported(p.title || f.name, String(p.text || ""));
-      const it = addItem(fields, cat ? cat.id : "u", "auto");
-      if (it) ok++; else dup++;
-      S.settings.processed.push(f.file_id);
-    } catch (e) {
-      const code = e && e.code;
-      if (code === "needs_reauth" || code === "server_not_connected" || code === "blocked_by_policy") { mapMcpError(e); break; }
-      dbx.failed.push(f.name);
-    }
-  }
-  if (S.settings.processed.length > 2000) S.settings.processed = S.settings.processed.slice(-2000);
-  const done = new Set(S.settings.processed);
-  dbx.staged = dbx.staged.filter(f => !done.has(f.file_id));
-  dbx.importing = false;
-  if (ok || dup) {
-    commit();
-    toast(`Imported ${ok} item${ok === 1 ? "" : "s"}${dup ? ` (${dup} duplicate${dup === 1 ? "" : "s"} skipped)` : ""} from Dropbox`);
-  } else renderDrawer();
-  if (mcp && mcp.invalidate) mcp.invalidate(dbx.server, dbx.listName).catch(() => {});
-}
-
 /* ---------------- drawer ---------------- */
 
 function openDrawer() { $("#drawer").classList.add("open"); renderDrawer(); }
@@ -1184,42 +1101,17 @@ function closeDrawer() { $("#drawer").classList.remove("open"); }
 $("#btn-drawer").addEventListener("click", openDrawer);
 $("#btn-drawer-close").addEventListener("click", closeDrawer);
 
-function dbxStatusLine() {
-  const map = {
-    init: ["idle", "Checking the Dropbox connection…"],
-    unavailable: ["idle", "Connector access isn't available in this view — manual drag &amp; drop still works."],
-    "no-connector": ["warn", "Add the <strong>Dropbox</strong> connector in claude.ai Settings → Connectors to enable auto-import."],
-    reauth: ["bad", "Dropbox needs to be reconnected — claude.ai Settings → Connectors."],
-    blocked: ["bad", "Your organization's policy blocks Dropbox calls from this page."],
-    "no-tools": ["warn", "The connected Dropbox doesn't expose the folder tools this page needs."],
-    "folder-missing": ["warn", `Couldn't read <code>${esc(S.settings.folder)}</code> — create that folder in Dropbox, then it's watched automatically.`],
-    error: ["warn", "Couldn't reach Dropbox just now — it retries on its own."],
-    watching: ["ok", `Watching <code>${esc(S.settings.folder)}</code>${dbx.lastSeen ? ` · checked ${new Date(dbx.lastSeen).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : ""}`]
-  };
-  const [cls, msg] = map[dbx.status] || map.error;
-  return `<div class="status-line"><span class="sdot ${cls}"></span><span>${msg}</span></div>`;
-}
-
 function renderDrawer() {
   if (!$("#drawer").classList.contains("open")) return;
-  const staged = dbx.staged.slice(0, 8).map(f =>
-    `<div class="sl-row"><span class="sl-name">${esc(f.name)}</span><span class="num">${f.modified_time ? esc(fmtDay(new Date(f.modified_time))) : ""}</span></div>`).join("");
+  const m = S.meta || {};
+  const status = m.lastSweep
+    ? `<div class="status-line"><span class="sdot ok"></span><span>Automation active — last sweep ${esc(new Date(m.lastSweep).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}, ${m.swept || 0} item${m.swept === 1 ? "" : "s"} auto-filed so far.</span></div>`
+    : `<div class="status-line"><span class="sdot idle"></span><span>No automated sweep has run yet. Once the Power Automate flow starts dropping files, Claude files them here on its schedule (weekdays, every 2 hours).</span></div>`;
   const sample = JSON.stringify({ subject: "Comp review — Fabrikam req", from: "Dana Reyes <dana@fabrikam.com>", received: "2026-08-24T14:02:00Z", category: "Promotion", id: "unique-message-id" }, null, 2);
   $("#drawer-body").innerHTML = `
-    <h3>Auto-import from Outlook</h3>
-    ${dbxStatusLine()}
-    ${dbx.staged.length ? `
-      <div class="staged-list">${staged}${dbx.staged.length > 8 ? `<div class="sl-row"><span class="sl-name">…and ${dbx.staged.length - 8} more</span></div>` : ""}</div>
-      <button class="btn primary" id="btn-import" ${dbx.importing || RO ? "disabled" : ""}>${dbx.importing ? "Importing…" : `Import ${Math.min(dbx.staged.length, 25)} new item${dbx.staged.length === 1 ? "" : "s"}`}</button>
-      ${RO ? '<p>Importing needs write access to this board.</p>' : ""}`
-      : dbx.status === "watching" ? "<p>No new files in the inbox folder. New drops show up here within a couple of minutes.</p>" : ""}
-    ${dbx.failed.length ? `<p style="color:var(--danger)">Couldn't read: ${esc(dbx.failed.join(", "))}</p>` : ""}
-
-    <h3>Watched Dropbox folder</h3>
-    <div class="field-row">
-      <input id="set-folder" value="${esc(S.settings.folder)}" ${RO ? "disabled" : ""} aria-label="Dropbox folder path">
-      ${RO ? "" : '<button class="btn small" id="btn-folder-save">Save</button>'}
-    </div>
+    <h3>Auto-filing from Outlook</h3>
+    ${status}
+    <p>Nothing on the Microsoft side is ever read by Claude. Your Power Automate flow <em>pushes</em> one small JSON file per categorized email into the tracker's GitHub repo, and a scheduled Claude task sweeps that folder and files the items onto this board.</p>
 
     <h3>Your initials on new cards</h3>
     <div class="field-row">
@@ -1227,53 +1119,49 @@ function renderDrawer() {
       <button class="btn small" id="btn-name-save">Save</button>
     </div>
 
-    <h3>How the Outlook automation works</h3>
-    <p>Applying an Outlook category files the message onto this board — no dragging needed:</p>
+    <h3>Setting up the Microsoft-side flow</h3>
     <ol>
-      <li>In Dropbox, create the folder <code>${esc(S.settings.folder)}</code>.</li>
+      <li>On GitHub, create a <strong>fine-grained personal access token</strong> limited to the tracker repo with <em>Contents: Read and write</em> (github.com → Settings → Developer settings → Fine-grained tokens).</li>
       <li>In <strong>Power Automate</strong>, create a scheduled flow (every 15 min) with an <em>Office&nbsp;365 Outlook → Send an HTTP request</em> step:<br>
-      <code>GET /v1.0/me/messages?$filter=categories/any(c:c eq 'Promotion') and not(categories/any(c:c eq 'Logged'))&amp;$select=id,subject,from,receivedDateTime,categories</code></li>
-      <li>For each result, add a <em>Dropbox → Create file</em> step in the folder above, file name <code>@{item()?['id']}.json</code>, with this shape:</li>
+      <code>GET https://graph.microsoft.com/v1.0/me/messages?$filter=categories/any(c:c eq 'Promotion') and not(categories/any(c:c eq 'Logged'))&amp;$select=id,subject,from,receivedDateTime,categories</code></li>
+      <li>For each result, an <em>HTTP</em> step: <code>PUT https://api.github.com/repos/marisagibaud-sys/Claude/contents/inbox/@{guid()}.json</code> with header <code>Authorization: Bearer &lt;your token&gt;</code> and body <code>{"message":"log email","branch":"claude/email-teams-drag-drop-tracker-2qgei7","content":"&lt;base64 of the JSON below&gt;"}</code>:</li>
     </ol>
     <pre>${esc(sample)}</pre>
     <ol start="4">
       <li>Then a second <em>Send an HTTP request</em> (PATCH the message) to add a <code>Logged</code> category so it isn't picked up twice.</li>
-      <li>This page watches the folder and stages new files — one click imports them into the matching column. The <em>Outlook category</em> field on each column (⋯ menu) is what the <code>category</code> value matches against.</li>
+      <li>Claude's scheduled task sweeps <code>inbox/</code> on weekdays every 2 hours, files each item into the column whose <em>Outlook category</em> matches its <code>category</code> value (⋯ menu on each column), and archives the file. Non-matching items land in Uncategorized.</li>
     </ol>
-    <p>Repeat the flow per category you care about, or use one flow with a broader filter — the board routes each file by its <code>category</code> value. Files that don't match any column land in Uncategorized. A full walkthrough lives in the project README.</p>`;
-  const imp = $("#btn-import"); if (imp) imp.onclick = runImport;
-  const fs = $("#btn-folder-save"); if (fs) fs.onclick = () => {
-    const v = $("#set-folder").value.trim();
-    if (!v.startsWith("/")) { toast("Folder path must start with /"); return; }
-    S.settings.folder = v; commit(); startWatch(); renderDrawer();
-  };
+    <p>The exact flow recipe — including the no-premium-license alternative — lives in the project README.</p>`;
   $("#btn-name-save").onclick = () => { lsSet("vb-name", $("#set-name").value.trim()); toast("Saved — new cards you add will carry your initials."); };
 }
 
 /* ---------------- boot ---------------- */
 
-window.__vb = { parseEml, parseMsg, parseLoose, parseImported }; // console/test access to the parsers
+window.__vb = { parseEml, parseMsg, parseLoose, matchCategory, assemble }; // console/test access
 
 $("#btn-add").addEventListener("click", () => openAddModal(null, "manual"));
 addEventListener("resize", () => { clearTimeout(renderChart._t); renderChart._t = setTimeout(renderChart, 150); });
 
-(async function boot() {
-  try {
-    const r = await fetch("data/state.json?v=" + Date.now());
-    if (r.ok) S = migrate(await r.json());
-  } catch {}
+(function boot() {
   render();
-  // restore a draft that a conflict reload interrupted
+  // restore UI position after a save-triggered reload
   try {
-    const d = sessionStorage.getItem("vb-draft");
+    if (ssGet("vb-saved")) { ssDel("vb-saved"); chip("Saved for everyone", 2200); }
+    const ui = ssGet("vb-ui");
+    if (ui) {
+      ssDel("vb-ui");
+      const { scroll, drawer } = JSON.parse(ui);
+      if (drawer) openDrawer();
+      if (scroll) scrollTo(0, scroll);
+    }
+    const d = ssGet("vb-draft");
     if (d) { const { fields, via } = JSON.parse(d); openAddModal(fields, via); }
   } catch {}
-  // resolve capabilities in the background; page works without them
+  // resolve the artifact capability in the background; page works without it
   Promise.resolve(window.claude?.use?.("artifact")).then(a => {
     art = a;
     if (!a) { savingUnavailable = true; chip("Not connected — changes stay on this screen only", 5000); }
   });
-  initMcp();
 })();
 
 })();

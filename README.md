@@ -1,13 +1,15 @@
 # Triage Volume Board
 
 A shared drag-and-drop tracker for categorizing email and Microsoft Teams volume.
-The board is published as a Claude artifact — one page the whole team opens, drops
+The board is published as a Claude artifact — one page the team opens, drops
 messages onto, and reads volume trends from. Every change is saved back into the
-artifact itself, so everyone sees the same board.
+artifact itself, so everyone with access sees the same board.
 
 `index.html` is the entire app (no build step). Publishing it as a Claude artifact
-with the `artifact`, `mcp` (Dropbox), and `downloads` capabilities turns on shared
-saving, Outlook auto-import, and CSV export.
+with the `artifact` and `downloads` capabilities turns on shared saving and CSV
+export. **No connectors are used** — Claude has no access to any mailbox or file
+store; automated items are *pushed* into this repo by a flow the mailbox owner
+controls (see below).
 
 ## What it does
 
@@ -18,9 +20,10 @@ saving, Outlook auto-import, and CSV export.
   confirm the parsed fields, pick a category.
 - **Categorize by dragging** — cards move between columns; each column maps to an
   Outlook category (editable via the column's `⋯` menu).
+- **Attribution** — cards carry the initials of whoever added them (asked for once,
+  remembered per device); automated items are marked `auto`.
 - **Volume view** — stat tiles plus an 8-week stacked chart of items per week per
-  category, with per-column weekly counts. **Export CSV** downloads the raw rows
-  for deeper analysis.
+  category, with per-column weekly counts. **Export CSV** downloads the raw rows.
 - **Outlook category automation** — apply a category in Outlook and the message
   lands on the board without any dragging (setup below).
 
@@ -31,38 +34,45 @@ Uncategorized bucket for anything that doesn't match.
 
 ## The Outlook category automation
 
-Artifacts can't receive webhooks, so the bridge is a folder in Dropbox: Power
-Automate drops one small JSON file per categorized message into a watched folder,
-and the board (using the viewer's Dropbox connector) stages new files and imports
-them into the matching column with one click.
+Design constraint: the mailbox owner does **not** grant Claude any access to
+Outlook or Microsoft 365. So the data flows one way, pushed from the Microsoft
+side into this repo:
 
 ```
 Outlook category applied
-        │  (Power Automate, every 15 min)
+        │  (Power Automate, every 15 min — runs entirely in your tenant)
         ▼
-Dropbox: /Claude/Email Tracker/Inbox/<message-id>.json
-        │  (board watches the folder via the Dropbox connector)
+this repo: inbox/<guid>.json          one small file per categorized email
+        │  (scheduled Claude task, weekdays every 2 hours)
         ▼
-Board column whose "Outlook category" field matches
+Board column whose "Outlook category" field matches; file moves to inbox/processed/
 ```
+
+Claude only ever reads what the flow chose to send: subject, sender, received
+date, category, message id. The scheduled task de-duplicates by message id, files
+non-matching categories into Uncategorized, and updates the published board.
 
 ### One-time setup
 
-1. **Dropbox** — create the folder `/Claude/Email Tracker/Inbox` (the path is
-   editable in the board's *Automation* drawer).
-2. **Power Automate** — create a scheduled cloud flow:
-   - **Trigger:** Recurrence, every 15 minutes.
-   - **Action:** *Office 365 Outlook → Send an HTTP request*:
+1. **GitHub token** — create a fine-grained personal access token scoped to this
+   repository only, permission *Contents: Read and write*
+   (github.com → Settings → Developer settings → Fine-grained tokens). This is
+   what lets the flow write files here; it grants nothing else.
+
+2. **Power Automate** — a scheduled cloud flow, every 15 minutes:
+
+   - **Find categorized mail** — *Office 365 Outlook → Send an HTTP request*:
 
      ```
      GET https://graph.microsoft.com/v1.0/me/messages?$filter=categories/any(c:c eq 'Promotion') and not(categories/any(c:c eq 'Logged'))&$select=id,subject,from,receivedDateTime,categories
      ```
 
-     (Swap `'Promotion'` for whichever categories you track, or run one flow
-     per category.)
-   - **Apply to each** result (`body('Send_an_HTTP_request')?['value']`):
-     1. *Dropbox → Create file* in the folder above, file name
-        `@{item()?['id']}.json`, content:
+     Swap `'Promotion'` for whichever category, or run one flow per category —
+     the board routes each file by its `category` value either way.
+
+   - **Apply to each** item in `body(...)?['value']`:
+
+     1. **Compose** the payload:
 
         ```json
         {
@@ -73,30 +83,67 @@ Board column whose "Outlook category" field matches
           "id": "@{item()?['id']}"
         }
         ```
-     2. A second *Send an HTTP request* to mark the message handled so the next
-        run skips it:
+
+     2. **HTTP** (premium connector):
+
+        ```
+        PUT https://api.github.com/repos/marisagibaud-sys/Claude/contents/inbox/@{guid()}.json
+        Headers:
+          Authorization: Bearer <your fine-grained token>
+          Accept: application/vnd.github+json
+        Body:
+          {
+            "message": "log categorized email",
+            "branch": "claude/email-teams-drag-drop-tracker-2qgei7",
+            "content": "@{base64(string(outputs('Compose')))}"
+          }
+        ```
+
+     3. **Mark it handled** — a second *Send an HTTP request*:
 
         ```
         PATCH https://graph.microsoft.com/v1.0/me/messages/@{item()?['id']}
         Body: { "categories": @{union(item()?['categories'], createArray('Logged'))} }
         ```
-3. **On the board** — open *Automation*, confirm the folder is being watched, and
-   give each column the Outlook category it maps to (the `⋯` menu). Files whose
-   `category` doesn't match any column land in Uncategorized.
 
-The board de-duplicates by Dropbox file id and by message id, so re-runs and
-overlapping flows are safe. Any `.json`, `.eml`, or `.txt` file dropped in the
-folder — by a flow or by hand — is importable; JSON gets the richest parsing.
+   > **No Power Automate premium?** The plain HTTP action needs a premium
+   > license. If that's not available, an Azure **Logic App** (consumption plan)
+   > has the same Office 365 Outlook connector plus a free built-in HTTP action,
+   > and costs pennies at this volume — same steps, same recipe.
 
-### Notes
+3. **Claude's scheduled sweep** — already configured: a recurring task runs on
+   weekdays every 2 hours, checks `inbox/`, merges new items into the published
+   board, and moves processed files to `inbox/processed/`. When the inbox is
+   empty it does nothing.
 
-- Auto-import runs with the *viewer's* Dropbox connector (added in claude.ai
-  Settings → Connectors) and needs read access to the watched folder. Teammates
-  without the connector can still use every drag-and-drop feature.
-- Because the page calls a connector, the artifact can be shared with specific
-  people or your organization, but not published fully publicly.
-- Import is one click rather than fully silent by design: saving the board is a
-  shared write, so a person confirms it.
+### Inbox file format
+
+Any `.json` file in `inbox/` with this shape (only `subject` is required):
+
+```json
+{
+  "subject": "Comp review — Fabrikam req",
+  "from": "Dana Reyes <dana@fabrikam.com>",
+  "received": "2026-08-24T14:02:00Z",
+  "category": "Promotion",
+  "id": "unique-message-id"
+}
+```
+
+`category` matches a column's *Outlook category* field (or its name),
+case-insensitively. `id` is the de-duplication key — the same id never creates
+two cards.
+
+## How shared state works
+
+The board's state (categories, items, meta) lives in the
+`<script id="vb-state">` block of `index.html`. The page never serializes its
+live DOM: it rebuilds the complete document from its own parse-time source plus
+current state (`assemble()` in the code) and publishes that as the new artifact
+version — compare-and-set, so concurrent editors can't clobber each other. The
+scheduled sweep does the same merge server-side. Escaping note: `</` inside the
+state JSON is written as `<\/` (a legal JSON escape) so no subject line can break
+out of the script block.
 
 ## Parsers included
 
@@ -105,6 +152,6 @@ folder — by a flow or by hand — is importable; JSON gets the richest parsing
 | `.eml` | Subject (RFC 2047 decoded), From, Date, Message-ID |
 | `.msg` (Outlook) | Subject, sender, received time via a minimal MS-CFB reader |
 | Pasted/dropped text | `From:` / `Subject:` / `Sent:` header lines, or first line as the summary; Teams paste patterns detected and split into author + message |
-| Automation JSON | `subject`, `from` (string or Graph shape), `received`, `category`/`categories`, `id` |
+| Inbox JSON | `subject`, `from`, `received`, `category`, `id` |
 
-Parsers are reachable in the browser console as `window.__vb` for testing.
+Parsers and `assemble()` are reachable in the browser console as `window.__vb`.
