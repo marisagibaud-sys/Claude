@@ -64,7 +64,7 @@ non-matching categories into Uncategorized, and updates the published board.
    - **Find categorized mail** — *Office 365 Outlook → Send an HTTP request*:
 
      ```
-     GET https://graph.microsoft.com/v1.0/me/messages?$filter=categories/any(c:c eq 'Promotion') and not(categories/any(c:c eq 'Logged'))&$select=id,conversationId,subject,from,receivedDateTime,categories
+     GET https://graph.microsoft.com/v1.0/me/messages?$filter=categories/any(c:c eq 'Promotion') and not(categories/any(c:c eq 'Logged'))&$select=id,conversationId,internetMessageId,subject,from,receivedDateTime,categories
      ```
 
      Swap `'Promotion'` for whichever category, or run one flow per category —
@@ -81,7 +81,8 @@ non-matching categories into Uncategorized, and updates the published board.
           "received": "@{item()?['receivedDateTime']}",
           "category": "@{coalesce(first(intersection(item()?['categories'], createArray('Promotion','Data Request','Other','Reorg','Job Evaluation','Market Adjustment','New Position','Research','Benchmarking'))), first(item()?['categories']))}",
           "id": "@{item()?['id']}",
-          "cid": "@{item()?['conversationId']}"
+          "cid": "@{item()?['conversationId']}",
+          "imid": "@{item()?['internetMessageId']}"
         }
         ```
 
