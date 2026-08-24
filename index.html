@@ -1,0 +1,1272 @@
+<title>Triage Volume Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --line: #e1e0d9;
+    --baseline: #c3c2b7;
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --hot: rgba(42, 120, 214, 0.08);
+    --ring: rgba(11, 11, 11, 0.10);
+    --danger: #d03b3b;
+    --cat-0: #2a78d6; --cat-1: #eb6834; --cat-2: #1baf7a; --cat-3: #eda100;
+    --cat-4: #e87ba4; --cat-5: #008300; --cat-6: #4a3aa7; --cat-7: #e34948;
+    --cat-u: #a3a19b;
+    --shadow: 0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --line: #2c2c2a;
+      --baseline: #383835;
+      --accent: #3987e5;
+      --accent-ink: #ffffff;
+      --hot: rgba(57, 135, 229, 0.14);
+      --ring: rgba(255, 255, 255, 0.10);
+      --danger: #e66767;
+      --cat-0: #3987e5; --cat-1: #d95926; --cat-2: #199e70; --cat-3: #c98500;
+      --cat-4: #d55181; --cat-5: #008300; --cat-6: #9085e9; --cat-7: #e66767;
+      --cat-u: #7a786f;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --line: #2c2c2a;
+    --baseline: #383835;
+    --accent: #3987e5;
+    --accent-ink: #ffffff;
+    --hot: rgba(57, 135, 229, 0.14);
+    --ring: rgba(255, 255, 255, 0.10);
+    --danger: #e66767;
+    --cat-0: #3987e5; --cat-1: #d95926; --cat-2: #199e70; --cat-3: #c98500;
+    --cat-4: #d55181; --cat-5: #008300; --cat-6: #9085e9; --cat-7: #e66767;
+    --cat-u: #7a786f;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
+  input, select, textarea {
+    font: inherit; color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 10px;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ---------- top bar ---------- */
+  .top {
+    display: flex; align-items: center; gap: 16px;
+    padding: 20px 0 14px;
+  }
+  .wordmark {
+    font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+    font-weight: 750; font-size: 21px; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .wordmark .glyph {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--accent); color: var(--accent-ink);
+    display: grid; place-items: center;
+  }
+  .top .spacer { flex: 1; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--line); background: var(--surface);
+    border-radius: 999px; padding: 5px 12px;
+    color: var(--ink-2); font-size: 13px; font-weight: 500;
+    white-space: nowrap;
+  }
+  .chip.ro { color: var(--danger); border-color: var(--danger); }
+  .chip[hidden] { display: none; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    border-radius: 8px; padding: 8px 14px;
+    font-weight: 600; font-size: 13.5px;
+    border: 1px solid var(--line); background: var(--surface);
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--baseline); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn.small { padding: 5px 10px; font-size: 12.5px; border-radius: 7px; }
+  .btn.danger { color: var(--danger); }
+
+  /* ---------- stat tiles ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 10px 0 18px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px 12px; box-shadow: var(--shadow);
+  }
+  .tile .label { font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .tile .value {
+    font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+    font-weight: 700; font-size: 30px; line-height: 1.15; margin-top: 2px;
+  }
+  .tile .sub { font-size: 12.5px; color: var(--ink-2); margin-top: 1px; }
+
+  /* ---------- chart card ---------- */
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--shadow); padding: 16px 18px;
+  }
+  .panel h2 {
+    margin: 0 0 4px; font-size: 14px; font-weight: 600;
+  }
+  .panel .hint { color: var(--muted); font-size: 12.5px; margin: 0 0 8px; }
+  #chart { width: 100%; }
+  #chart svg { display: block; width: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
+  .legend .lg { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-2); }
+  .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  #tip {
+    position: fixed; z-index: 60; pointer-events: none; display: none;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: var(--shadow); padding: 7px 10px; font-size: 12.5px; max-width: 260px;
+  }
+  #tip .t1 { font-weight: 600; }
+  #tip .t2 { color: var(--ink-2); }
+
+  /* ---------- board ---------- */
+  .board-head { display: flex; align-items: baseline; gap: 12px; margin: 26px 0 10px; }
+  .board-head h2 {
+    font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+    font-size: 17px; font-weight: 700; margin: 0;
+  }
+  .board-head .hint { color: var(--muted); font-size: 12.5px; }
+  .board {
+    display: grid; gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    align-items: start;
+  }
+  .col {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--shadow); min-height: 180px;
+    display: flex; flex-direction: column;
+    transition: border-color .12s, background-color .12s;
+  }
+  @media (prefers-reduced-motion: reduce) { .col, .card { transition: none !important; } }
+  .col.hot { border-color: var(--accent); background: var(--hot); }
+  .col-head { padding: 11px 12px 8px; border-bottom: 1px solid var(--line); }
+  .col-head .row1 { display: flex; align-items: center; gap: 8px; }
+  .col-head .name { font-weight: 600; font-size: 13.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .col-head .count {
+    font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+    font-weight: 700; font-size: 15px;
+  }
+  .col-head .menu-btn { color: var(--muted); border-radius: 6px; padding: 2px 6px; }
+  .col-head .menu-btn:hover { color: var(--ink); background: var(--hot); }
+  .col-head .row2 { display: flex; align-items: center; gap: 8px; margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+  .ol-tag {
+    border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px;
+    max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .cards { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .col .empty { color: var(--muted); font-size: 12px; text-align: center; padding: 18px 8px; border: 1.5px dashed var(--line); border-radius: 9px; }
+  .card {
+    background: var(--page); border: 1px solid var(--line); border-radius: 10px;
+    padding: 9px 10px 8px; cursor: grab; position: relative;
+  }
+  .card:active { cursor: grabbing; }
+  .card.dragging { opacity: 0.45; }
+  .card .sub {
+    font-weight: 600; font-size: 13px; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    margin-right: 30px; overflow-wrap: anywhere;
+  }
+  .card .meta { display: flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 11.5px; color: var(--muted); min-width: 0; }
+  .card .meta .from { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .card .meta svg { flex: none; }
+  .card .auto-chip { border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; font-size: 10.5px; flex: none; }
+  .card .acts { position: absolute; top: 6px; right: 6px; display: none; gap: 2px; }
+  .card:hover .acts, .card:focus-within .acts { display: flex; }
+  .card .acts button { color: var(--muted); border-radius: 6px; padding: 2px 5px; background: var(--page); }
+  .card .acts button:hover { color: var(--ink); background: var(--hot); }
+  .add-col {
+    border: 1.5px dashed var(--line); border-radius: 12px; min-height: 180px;
+    color: var(--muted); font-weight: 600; display: grid; place-items: center;
+  }
+  .add-col:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ---------- footer hint ---------- */
+  .foot-hint {
+    margin-top: 22px; color: var(--muted); font-size: 12.5px;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  kbd {
+    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px;
+    padding: 0 5px; font-family: inherit; font-size: 11.5px; background: var(--surface);
+  }
+
+  /* ---------- drop overlay ---------- */
+  #dropveil {
+    position: fixed; inset: 0; z-index: 40; display: none;
+    background: color-mix(in srgb, var(--page) 55%, transparent);
+    backdrop-filter: blur(1px);
+    pointer-events: none;
+  }
+  #dropveil .msg {
+    position: absolute; left: 50%; top: 24px; transform: translateX(-50%);
+    background: var(--accent); color: var(--accent-ink);
+    border-radius: 999px; padding: 9px 18px; font-weight: 600; box-shadow: var(--shadow);
+  }
+  body.dragging-in #dropveil { display: block; }
+
+  /* ---------- drawer ---------- */
+  #drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 94vw); z-index: 50;
+    background: var(--surface); border-left: 1px solid var(--line);
+    box-shadow: -8px 0 32px rgba(0,0,0,.12);
+    transform: translateX(102%); transition: transform .18s ease;
+    display: flex; flex-direction: column;
+  }
+  @media (prefers-reduced-motion: reduce) { #drawer { transition: none; } }
+  #drawer.open { transform: none; }
+  #drawer .d-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+  #drawer .d-head h2 { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 16px; font-weight: 700; margin: 0; flex: 1; }
+  #drawer .d-body { padding: 16px 18px; overflow-y: auto; flex: 1; }
+  #drawer h3 { font-size: 13px; font-weight: 600; margin: 18px 0 6px; }
+  #drawer h3:first-child { margin-top: 0; }
+  #drawer p, #drawer li { font-size: 13px; color: var(--ink-2); }
+  #drawer ol { padding-left: 18px; margin: 6px 0; }
+  #drawer li { margin: 5px 0; }
+  #drawer code, #drawer pre {
+    font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+    font-size: 11.5px;
+  }
+  #drawer pre {
+    background: var(--page); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px; overflow-x: auto; margin: 6px 0;
+  }
+  #drawer code { background: var(--page); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  .status-line {
+    display: flex; align-items: flex-start; gap: 9px;
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 8px 0;
+    font-size: 13px;
+  }
+  .status-line .sdot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex: none; }
+  .sdot.ok { background: #0ca30c; }
+  .sdot.warn { background: #fab219; }
+  .sdot.bad { background: var(--danger); }
+  .sdot.idle { background: var(--muted); }
+  .staged-list { border: 1px solid var(--line); border-radius: 10px; margin: 8px 0; overflow: hidden; }
+  .staged-list .sl-row { display: flex; gap: 8px; padding: 7px 11px; font-size: 12.5px; border-top: 1px solid var(--line); color: var(--ink-2); }
+  .staged-list .sl-row:first-child { border-top: none; }
+  .staged-list .sl-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .field-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+  .field-row input { flex: 1; min-width: 0; }
+
+  /* ---------- modal ---------- */
+  #veil {
+    position: fixed; inset: 0; z-index: 70; display: none;
+    background: rgba(0,0,0,.35); align-items: flex-start; justify-content: center;
+    padding: 8vh 16px 16px;
+  }
+  #veil.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); width: 480px; max-width: 100%; max-height: 84vh; overflow-y: auto;
+    padding: 18px 20px;
+  }
+  .modal h2 { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 17px; font-weight: 700; margin: 0 0 12px; }
+  .modal label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin: 11px 0 4px; }
+  .modal input, .modal select, .modal textarea { width: 100%; }
+  .modal .m-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .modal .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .swatches { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 4px; }
+  .swatches button { width: 26px; height: 26px; border-radius: 8px; border: 2px solid transparent; }
+  .swatches button[aria-pressed="true"] { border-color: var(--ink); }
+
+  /* ---------- toast ---------- */
+  #toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+    z-index: 80; display: none; align-items: center; gap: 12px;
+    background: var(--ink); color: var(--page);
+    border-radius: 10px; padding: 10px 16px; font-size: 13.5px; box-shadow: var(--shadow);
+    max-width: min(90vw, 560px);
+  }
+  #toast.show { display: flex; }
+  #toast button { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  @media (max-width: 640px) {
+    .wrap { padding: 0 12px 60px; }
+    .top { flex-wrap: wrap; }
+  }
+</style>
+
+<script id="vb-default-state" type="application/json">
+{
+  "v": 1,
+  "cats": [
+    { "id": "c1", "name": "New requests",  "outlook": "Blue category",   "slot": 0 },
+    { "id": "c2", "name": "Follow-up",     "outlook": "Orange category", "slot": 1 },
+    { "id": "c3", "name": "Resolved",      "outlook": "Green category",  "slot": 2 },
+    { "id": "c4", "name": "FYI only",      "outlook": "Yellow category", "slot": 3 }
+  ],
+  "items": [],
+  "settings": { "folder": "/Claude/Email Tracker/Inbox", "processed": [] }
+}
+</script>
+
+<div class="wrap">
+  <header class="top">
+    <div class="wordmark">
+      <span class="glyph" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 4.5 7.5 8.5 13.5 4.5M2.5 2.5h10a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      Triage Volume Board
+    </div>
+    <div class="spacer"></div>
+    <span class="chip" id="save-chip" hidden></span>
+    <span class="chip ro" id="ro-chip" hidden>View only</span>
+    <button class="btn" id="btn-drawer">Automation</button>
+    <button class="btn" id="btn-export">Export CSV</button>
+    <button class="btn primary" id="btn-add">+ Add item</button>
+  </header>
+
+  <section class="tiles" id="tiles" aria-label="Volume summary"></section>
+
+  <section class="panel">
+    <h2>Weekly volume</h2>
+    <p class="hint">Items by week received, split by category — the read on where volume is going.</p>
+    <div id="chart"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <div class="board-head">
+    <h2>Board</h2>
+    <span class="hint">Drag cards between columns to recategorize · drop emails straight onto a column</span>
+  </div>
+  <section class="board" id="board" aria-label="Category board"></section>
+
+  <p class="foot-hint">
+    <span>Drop <strong>.eml</strong> / <strong>.msg</strong> files or selected text onto a column</span>·
+    <span><kbd>Ctrl</kbd>+<kbd>V</kbd> anywhere to paste a copied email or Teams message</span>·
+    <span>Apply an Outlook category and the automation files it here for you</span>
+  </p>
+</div>
+
+<div id="dropveil" aria-hidden="true"><div class="msg">Release over a column to categorize — or anywhere to review first</div></div>
+<div id="tip" role="tooltip"></div>
+
+<aside id="drawer" aria-label="Automation and settings">
+  <div class="d-head">
+    <h2>Automation &amp; settings</h2>
+    <button class="btn small" id="btn-drawer-close">Close</button>
+  </div>
+  <div class="d-body" id="drawer-body"></div>
+</aside>
+
+<div id="veil"><div class="modal" role="dialog" aria-modal="true" id="modal"></div></div>
+<div id="toast"><span id="toast-msg"></span><button id="toast-act" hidden></button></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------------- state ---------------- */
+
+const DEFAULT_STATE = JSON.parse(document.getElementById("vb-default-state").textContent);
+let S = DEFAULT_STATE;
+let RO = false;              // read-only view
+let savingUnavailable = false;
+let art = null, mcp = null, dl = null;
+
+const $ = (sel, el) => (el || document).querySelector(sel);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const CAT_U = { id: "u", name: "Uncategorized", outlook: "", slot: "u" };
+const catColor = c => c.slot === "u" ? "var(--cat-u)" : `var(--cat-${c.slot})`;
+const allCats = () => [...S.cats, CAT_U];
+const catById = id => allCats().find(c => c.id === id) || CAT_U;
+const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+
+function migrate(raw) {
+  if (!raw || typeof raw !== "object" || !Array.isArray(raw.cats) || !Array.isArray(raw.items)) return DEFAULT_STATE;
+  raw.settings = Object.assign({ folder: "/Claude/Email Tracker/Inbox", processed: [] }, raw.settings || {});
+  return raw;
+}
+
+/* ---------------- dates & weeks ---------------- */
+
+function weekStart(d) { // Monday 00:00 local
+  const x = new Date(d); x.setHours(0, 0, 0, 0);
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+  return x;
+}
+const weekKey = d => { const w = weekStart(d); return w.getFullYear() + "-" + String(w.getMonth() + 1).padStart(2, "0") + "-" + String(w.getDate()).padStart(2, "0"); };
+const itemDate = it => { const d = new Date(it.rcv || it.added); return isNaN(d) ? new Date(it.added) : d; };
+const fmtDay = d => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+/* ---------------- persistence (artifact files publish) ---------------- */
+
+let saveTimer = null, saveInFlight = false, saveDirty = false;
+
+function setRO() {
+  if (RO) return;
+  RO = true;
+  $("#ro-chip").hidden = false;
+  render();
+}
+
+function commit() { render(); scheduleSave(); }
+
+function scheduleSave() {
+  if (RO || savingUnavailable) return;
+  saveDirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(doSave, 1000);
+}
+
+async function doSave(retried) {
+  if (saveInFlight) { saveDirty = true; return; }
+  saveDirty = false; saveInFlight = true;
+  chip("Saving…");
+  try {
+    if (!art) art = await window.claude?.use?.("artifact");
+    if (!art) { savingUnavailable = true; chip("Shared saving unavailable here", 4000); return; }
+    await art.publish({ "data/state.json": JSON.stringify(S) });
+    chip("Saved for everyone", 2200);
+  } catch (e) {
+    const code = e && e.code;
+    if (code === "conflict") { /* view is reloading to the winning version */ }
+    else if (code === "not_writer" || code === "not_granted" || code === "consent_required") { setRO(); chip("View only — changes not saved", 4000); }
+    else if (code === "capability_disabled" || code === "capability_removed") { savingUnavailable = true; chip("Shared saving unavailable here", 4000); }
+    else if (code === "rate_limited") { saveDirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 6000); }
+    else if (code === "too_large") { chip("Board too large to save — export CSV and clear old items", 6000); }
+    else if (!retried) { setTimeout(() => doSave(true), 900 + Math.random() * 900); }
+    else chip("Couldn't save — will retry on your next change", 4000);
+  } finally {
+    saveInFlight = false;
+    if (saveDirty) scheduleSave();
+  }
+}
+
+function chip(msg, ttl) {
+  const el = $("#save-chip");
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(chip._t);
+  if (ttl) chip._t = setTimeout(() => { el.hidden = true; }, ttl);
+}
+
+/* ---------------- toast + undo ---------------- */
+
+let toastTimer = null;
+function toast(msg, actLabel, actFn) {
+  $("#toast-msg").textContent = msg;
+  const b = $("#toast-act");
+  b.hidden = !actLabel;
+  if (actLabel) { b.textContent = actLabel; b.onclick = () => { hideToast(); actFn(); }; }
+  $("#toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 6000);
+}
+function hideToast() { $("#toast").classList.remove("show"); }
+
+/* ---------------- items ---------------- */
+
+function addItem(fields, catId, via) {
+  const it = {
+    id: uid(),
+    cat: catById(catId).id,
+    src: fields.src || "email",
+    sub: (fields.sub || "(no subject)").slice(0, 300),
+    from: (fields.from || "").slice(0, 200),
+    rcv: fields.rcv || null,
+    mid: fields.mid || null,
+    note: fields.note || "",
+    via: via,
+    by: lsGet("vb-name") || "",
+    added: new Date().toISOString()
+  };
+  if (it.mid && S.items.some(x => x.mid === it.mid)) return null; // duplicate message
+  S.items.unshift(it);
+  return it;
+}
+
+function quickAdd(fields, catId, via) {
+  const it = addItem(fields, catId, via);
+  if (!it) { toast("Already on the board — skipped duplicate."); return; }
+  commit();
+  const cname = catById(it.cat).name;
+  toast(`Added “${it.sub.slice(0, 48)}” to ${cname}`, "Undo", () => {
+    S.items = S.items.filter(x => x.id !== it.id);
+    commit();
+  });
+}
+
+/* ---------------- parsers ---------------- */
+
+function decodeRfc2047(s) {
+  return String(s || "").replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (_, cs, enc, data) => {
+    try {
+      let bytes;
+      if (/b/i.test(enc)) bytes = Uint8Array.from(atob(data), c => c.charCodeAt(0));
+      else {
+        const qp = data.replace(/_/g, " ").replace(/=([0-9A-F]{2})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
+        bytes = Uint8Array.from(qp, c => c.charCodeAt(0));
+      }
+      return new TextDecoder(cs.trim()).decode(bytes);
+    } catch { return data; }
+  }).replace(/\?=\s+=\?/g, "?==?");
+}
+
+function parseEml(text) {
+  const m = text.match(/\r?\n\r?\n/);
+  const raw = m ? text.slice(0, m.index) : text.slice(0, 8000);
+  const unfolded = raw.replace(/\r?\n[ \t]+/g, " ");
+  const h = {};
+  for (const line of unfolded.split(/\r?\n/)) {
+    const mm = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+    if (mm) h[mm[1].toLowerCase()] = mm[2];
+  }
+  const d = h.date ? new Date(h.date) : null;
+  return {
+    sub: decodeRfc2047(h.subject || ""),
+    from: decodeRfc2047(h.from || ""),
+    rcv: d && !isNaN(d) ? d.toISOString() : null,
+    mid: h["message-id"] || null,
+    src: "email"
+  };
+}
+
+/* Minimal MS-CFB (.msg) reader: subject, sender, received time. Throws on anything unexpected. */
+function parseMsg(buf) {
+  const dv = new DataView(buf);
+  if (dv.getUint32(0, true) !== 0xE011CFD0 || dv.getUint32(4, true) !== 0xE11AB1A1) throw new Error("not cfb");
+  const ssz = 1 << dv.getUint16(30, true);
+  const dirStart = dv.getUint32(48, true);
+  const miniCutoff = dv.getUint32(56, true);
+  const miniFatStart = dv.getUint32(60, true);
+  const numMiniFat = dv.getUint32(64, true);
+  let dif = dv.getUint32(68, true);
+  const numDif = dv.getUint32(72, true);
+  const secOff = s => (s + 1) * ssz;
+  const fatSects = [];
+  for (let i = 0; i < 109; i++) { const v = dv.getUint32(76 + 4 * i, true); if (v < 0xFFFFFFFA) fatSects.push(v); }
+  for (let n = 0; n < numDif && dif < 0xFFFFFFFA; n++) {
+    const off = secOff(dif);
+    for (let i = 0; i < ssz / 4 - 1; i++) { const v = dv.getUint32(off + 4 * i, true); if (v < 0xFFFFFFFA) fatSects.push(v); }
+    dif = dv.getUint32(off + ssz - 4, true);
+  }
+  const perSect = ssz / 4;
+  const fatAt = idx => dv.getUint32(secOff(fatSects[Math.floor(idx / perSect)]) + 4 * (idx % perSect), true);
+  const chain = (start, cap) => { const out = []; let s = start, g = 0; while (s < 0xFFFFFFFA && g++ < cap) { out.push(s); s = fatAt(s); } return out; };
+  const u8 = new Uint8Array(buf);
+  const readChain = (start, len) => {
+    const sects = chain(start, Math.ceil(len / ssz) + 4);
+    const out = new Uint8Array(sects.length * ssz);
+    sects.forEach((s, i) => out.set(u8.subarray(secOff(s), secOff(s) + ssz), i * ssz));
+    return out.subarray(0, len);
+  };
+  // directory
+  const entries = [];
+  for (const s of chain(dirStart, 4096)) {
+    for (let i = 0; i < ssz / 128; i++) {
+      const off = secOff(s) + i * 128;
+      const nlen = dv.getUint16(off + 64, true);
+      if (!nlen) continue;
+      let name = "";
+      for (let j = 0; j < nlen / 2 - 1; j++) name += String.fromCharCode(dv.getUint16(off + 2 * j, true));
+      entries.push({ name, type: dv.getUint8(off + 66), start: dv.getUint32(off + 116, true), size: dv.getUint32(off + 120, true) });
+    }
+  }
+  const root = entries.find(e => e.type === 5);
+  if (!root) throw new Error("no root");
+  const miniStream = readChain(root.start, root.size);
+  const miniFat = [];
+  for (const s of chain(miniFatStart, numMiniFat + 4))
+    for (let i = 0; i < perSect; i++) miniFat.push(dv.getUint32(secOff(s) + 4 * i, true));
+  const readMini = (start, len) => {
+    const out = new Uint8Array(len); let s = start, w = 0, g = 0;
+    while (s < 0xFFFFFFFA && w < len && g++ < 65536) {
+      const take = Math.min(64, len - w);
+      out.set(miniStream.subarray(s * 64, s * 64 + take), w);
+      w += take; s = miniFat[s];
+    }
+    return out;
+  };
+  const readStream = e => e.size < miniCutoff ? readMini(e.start, e.size) : readChain(e.start, e.size);
+  const utf16 = b => { let out = ""; for (let i = 0; i + 1 < b.length; i += 2) out += String.fromCharCode(b[i] | (b[i + 1] << 8)); return out.replace(/\0+$/, ""); };
+  const strProp = tag => {
+    let e = entries.find(x => x.type === 2 && x.name.toLowerCase() === "__substg1.0_" + tag + "001f");
+    if (e) return utf16(readStream(e));
+    e = entries.find(x => x.type === 2 && x.name.toLowerCase() === "__substg1.0_" + tag + "001e");
+    if (e) return new TextDecoder("windows-1252").decode(readStream(e));
+    return "";
+  };
+  let rcv = null;
+  const props = entries.find(x => x.type === 2 && x.name === "__properties_version1.0");
+  if (props) {
+    const pb = readStream(props); const pdv = new DataView(pb.buffer, pb.byteOffset, pb.byteLength);
+    for (let off = 32; off + 16 <= pb.length; off += 16) {
+      const tag = pdv.getUint32(off, true);
+      if (tag === 0x0E060040 || tag === 0x00390040) { // received / submit time (FILETIME)
+        const lo = pdv.getUint32(off + 8, true), hi = pdv.getUint32(off + 12, true);
+        const ms = (hi * 4294967296 + lo) / 10000 - 11644473600000;
+        const d = new Date(ms);
+        if (d.getFullYear() > 1995 && d.getFullYear() < 2100) { rcv = d.toISOString(); if (tag === 0x0E060040) break; }
+      }
+    }
+  }
+  const name = strProp("0c1a"), mail = strProp("5d01") || strProp("0c1f");
+  return {
+    sub: strProp("0037") || strProp("0e1d"),
+    from: name && mail && !/@/.test(name) ? `${name} <${mail}>` : (name || mail),
+    rcv, mid: strProp("1035") || null, src: "email"
+  };
+}
+
+function parseLoose(text, html) {
+  const t = String(text || "");
+  const isTeams = /teams\.microsoft\.com|data-tid=|fui-ChatM|ui-chat__/i.test(html || "") || /^\[[^\]]+\]\s+.+:/.test(t.trim());
+  const grab = re => { const m = t.match(re); return m ? m[1].trim() : ""; };
+  const sub = grab(/^subject:[ \t]*(.+)$/im);
+  const from = grab(/^from:[ \t]*(.+)$/im);
+  const sent = grab(/^(?:sent|date):[ \t]*(.+)$/im);
+  const d = sent ? new Date(sent) : null;
+  const firstLine = t.split(/\r?\n/).map(l => l.trim()).find(l => l) || "";
+  const teamsLine = firstLine.match(/^(?:\[[^\]]+\]\s+)?([^:\n]{2,60}):\s+(.{3,})$/);
+  if (isTeams && !sub && teamsLine) {
+    return { sub: teamsLine[2].slice(0, 140), from: from || teamsLine[1].trim(), rcv: null, src: "teams" };
+  }
+  return {
+    sub: sub || firstLine.slice(0, 140),
+    from,
+    rcv: d && !isNaN(d) ? d.toISOString() : null,
+    src: isTeams ? "teams" : (sub || from ? "email" : "other")
+  };
+}
+
+function matchCategory(label) {
+  if (!label) return null;
+  const norm = s => String(s).toLowerCase().replace(/\s+category$/, "").trim();
+  const want = norm(label);
+  return allCats().find(c => norm(c.outlook) === want) || allCats().find(c => norm(c.name) === want) || null;
+}
+
+function parseImported(title, text) {
+  try {
+    const j = JSON.parse(text);
+    if (j && typeof j === "object") {
+      const label = Array.isArray(j.categories) ? j.categories.find(x => matchCategory(x)) : (j.category || j.outlookCategory);
+      const d = j.received || j.receivedDateTime || j.date;
+      const dd = d ? new Date(d) : null;
+      return {
+        fields: {
+          sub: j.subject || j.title || title,
+          from: j.from && j.from.emailAddress ? `${j.from.emailAddress.name || ""} <${j.from.emailAddress.address || ""}>` : (typeof j.from === "string" ? j.from : j.sender || ""),
+          rcv: dd && !isNaN(dd) ? dd.toISOString() : null,
+          mid: j.id || j.internetMessageId || null,
+          src: j.type === "teams" ? "teams" : "email"
+        },
+        cat: matchCategory(label)
+      };
+    }
+  } catch {}
+  if (/^(received|from|subject|date|to):/im.test(text)) { const f = parseEml(text); return { fields: f, cat: null }; }
+  const f = parseLoose(text, "");
+  f.sub = f.sub || title;
+  return { fields: f, cat: null };
+}
+
+/* ---------------- rendering ---------------- */
+
+const srcIcon = src => src === "teams"
+  ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-label="Teams message" role="img"><path d="M1.5 2.75A1.25 1.25 0 0 1 2.75 1.5h6.5a1.25 1.25 0 0 1 1.25 1.25v4.5A1.25 1.25 0 0 1 9.25 8.5H6.4L4 10.6a.4.4 0 0 1-.66-.3V8.5h-.59A1.25 1.25 0 0 1 1.5 7.25v-4.5Z" stroke="currentColor" stroke-width="1.1"/></svg>'
+  : '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-label="Email" role="img"><path d="M1.25 3.5 6 6.75 10.75 3.5M2 2.25h8a.75.75 0 0 1 .75.75v6a.75.75 0 0 1-.75.75H2a.75.75 0 0 1-.75-.75V3A.75.75 0 0 1 2 2.25Z" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function render() {
+  renderTiles(); renderChart(); renderBoard(); renderDrawer();
+  document.body.classList.toggle("readonly", RO);
+}
+
+function renderTiles() {
+  const now = new Date();
+  const thisWk = weekKey(now);
+  const lastWk = weekKey(new Date(now.getTime() - 7 * 864e5));
+  const cThis = S.items.filter(i => weekKey(itemDate(i)) === thisWk).length;
+  const cLast = S.items.filter(i => weekKey(itemDate(i)) === lastWk).length;
+  const auto = S.items.filter(i => i.via === "auto").length;
+  const counts = {};
+  for (const i of S.items) counts[i.cat] = (counts[i.cat] || 0) + 1;
+  const top = allCats().map(c => [c, counts[c.id] || 0]).sort((a, b) => b[1] - a[1])[0];
+  const delta = cThis - cLast;
+  const deltaTxt = cLast === 0 && cThis === 0 ? "no items yet"
+    : `${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta)} vs last week (${cLast})`;
+  $("#tiles").innerHTML = `
+    <div class="tile"><div class="label">This week</div><div class="value num">${cThis}</div><div class="sub num">${esc(deltaTxt)}</div></div>
+    <div class="tile"><div class="label">Total tracked</div><div class="value num">${S.items.length}</div><div class="sub">across ${allCats().filter(c => counts[c.id]).length || 0} categories</div></div>
+    <div class="tile"><div class="label">Top category</div><div class="value" style="font-size:19px;line-height:1.3;padding-top:6px">${top && top[1] ? `<span class="dot" style="display:inline-block;background:${catColor(top[0])};margin-right:7px"></span>${esc(top[0].name)}` : "—"}</div><div class="sub num">${top && top[1] ? top[1] + " items" : "nothing tracked yet"}</div></div>
+    <div class="tile"><div class="label">Auto-filed from Outlook</div><div class="value num">${auto}</div><div class="sub">via category → Dropbox</div></div>`;
+}
+
+function renderChart() {
+  const host = $("#chart");
+  const weeks = [];
+  const mon = weekStart(new Date());
+  for (let i = 7; i >= 0; i--) weeks.push(new Date(mon.getTime() - i * 7 * 864e5));
+  const cats = allCats();
+  const data = weeks.map(w => {
+    const key = weekKey(w);
+    const row = { w, total: 0, seg: {} };
+    for (const it of S.items) {
+      if (weekKey(itemDate(it)) !== key) continue;
+      row.seg[it.cat] = (row.seg[it.cat] || 0) + 1; row.total++;
+    }
+    return row;
+  });
+  const maxT = Math.max(1, ...data.map(r => r.total));
+  const W = Math.max(320, host.clientWidth || 640), H = 190;
+  const padL = 30, padR = 8, padT = 22, padB = 24;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const bw = Math.min(56, (iw / 8) * 0.55);
+  const gap = 2;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Stacked weekly volume by category">`;
+  const ticks = maxT <= 4 ? maxT : 4;
+  for (let t = 1; t <= ticks; t++) {
+    const v = Math.round((maxT / ticks) * t);
+    const y = padT + ih - (v / maxT) * ih;
+    svg += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/>` +
+           `<text x="${padL - 6}" y="${y + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)" class="num">${v}</text>`;
+  }
+  svg += `<line x1="${padL}" y1="${padT + ih}" x2="${W - padR}" y2="${padT + ih}" stroke="var(--baseline)" stroke-width="1"/>`;
+  data.forEach((row, i) => {
+    const cx = padL + (iw / 8) * (i + 0.5);
+    const x = cx - bw / 2;
+    let y = padT + ih;
+    const segs = cats.map(c => [c, row.seg[c.id] || 0]).filter(s => s[1] > 0);
+    segs.forEach(([c, v], si) => {
+      const h = Math.max(2, (v / maxT) * ih - (si > 0 ? gap : 0));
+      y -= h + (si > 0 ? gap : 0);
+      const topmost = si === segs.length - 1;
+      const r = topmost ? 4 : 0;
+      svg += `<path d="M${x},${y + h} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + bw - r},${y} Q${x + bw},${y} ${x + bw},${y + r} L${x + bw},${y + h} Z"
+        fill="${catColor(c)}" tabindex="0" data-tip="${esc(c.name)} — ${v} item${v === 1 ? "" : "s"}|wk of ${esc(fmtDay(row.w))}"><title>${esc(c.name)}: ${v} (wk of ${esc(fmtDay(row.w))})</title></path>`;
+    });
+    if (row.total) svg += `<text x="${cx}" y="${y - 5}" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--ink-2)" class="num">${row.total}</text>`;
+    svg += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${esc(fmtDay(row.w))}</text>`;
+  });
+  svg += "</svg>";
+  host.innerHTML = S.items.length ? svg : `<p class="hint" style="padding:24px 0;text-align:center">Nothing tracked yet — drop your first email below and the chart draws itself.</p>`;
+  const counts = {};
+  for (const i of S.items) counts[i.cat] = (counts[i.cat] || 0) + 1;
+  $("#legend").innerHTML = cats.map(c =>
+    `<span class="lg"><span class="dot" style="background:${catColor(c)}"></span>${esc(c.name)}<strong class="num" style="color:var(--ink)">${counts[c.id] || 0}</strong></span>`).join("");
+}
+
+function renderBoard() {
+  const counts = {}, wkCounts = {};
+  const thisWk = weekKey(new Date());
+  for (const i of S.items) {
+    counts[i.cat] = (counts[i.cat] || 0) + 1;
+    if (weekKey(itemDate(i)) === thisWk) wkCounts[i.cat] = (wkCounts[i.cat] || 0) + 1;
+  }
+  const cols = allCats().map(c => {
+    const items = S.items.filter(i => i.cat === c.id);
+    const cards = items.map(it => {
+      const d = it.rcv || it.added;
+      const when = fmtDay(new Date(d));
+      return `<article class="card" draggable="${RO ? "false" : "true"}" data-id="${it.id}" tabindex="0" aria-label="${esc(it.sub)}">
+        <div class="sub">${esc(it.sub)}</div>
+        <div class="meta">${srcIcon(it.src)}<span class="from">${esc(it.from || (it.src === "teams" ? "Teams message" : "—"))}</span><span class="num" style="flex:none">${esc(when)}</span>${it.via === "auto" ? '<span class="auto-chip">auto</span>' : ""}</div>
+        ${RO ? "" : `<div class="acts">
+          <button data-act="edit" title="Edit item" aria-label="Edit">✎</button>
+          <button data-act="del" title="Remove item" aria-label="Remove">✕</button>
+        </div>`}
+      </article>`;
+    }).join("");
+    return `<div class="col" data-cat="${c.id}">
+      <div class="col-head">
+        <div class="row1">
+          <span class="dot" style="background:${catColor(c)}"></span>
+          <span class="name">${esc(c.name)}</span>
+          <span class="count num">${counts[c.id] || 0}</span>
+          ${RO || c.id === "u" ? "" : `<button class="menu-btn" data-act="cat-edit" data-cat="${c.id}" title="Edit category" aria-label="Edit category ${esc(c.name)}">⋯</button>`}
+        </div>
+        <div class="row2">
+          <span class="num">${wkCounts[c.id] || 0} this wk</span>
+          ${c.outlook ? `<span class="ol-tag" title="Outlook category">${esc(c.outlook)}</span>` : ""}
+        </div>
+      </div>
+      <div class="cards">${cards || `<div class="empty">Drop emails or cards here</div>`}</div>
+    </div>`;
+  }).join("");
+  $("#board").innerHTML = cols + (RO || S.cats.length >= 8 ? "" : `<button class="add-col" id="btn-add-cat">+ New category</button>`);
+}
+
+/* ---------------- tooltips (chart) ---------------- */
+
+document.addEventListener("pointermove", e => {
+  const seg = e.target.closest && e.target.closest("[data-tip]");
+  const tip = $("#tip");
+  if (!seg) { tip.style.display = "none"; return; }
+  const [t1, t2] = seg.getAttribute("data-tip").split("|");
+  tip.innerHTML = `<div class="t1">${esc(t1)}</div><div class="t2">${esc(t2)}</div>`;
+  tip.style.display = "block";
+  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 10);
+  tip.style.left = x + "px";
+  tip.style.top = Math.max(8, e.clientY - tip.offsetHeight - 12) + "px";
+});
+
+/* ---------------- board interactions ---------------- */
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "btn-add-cat") return openCatModal(null);
+  if (b.dataset.act === "cat-edit") return openCatModal(b.dataset.cat);
+  const card = e.target.closest(".card");
+  if (card && b.dataset.act === "del") {
+    const it = S.items.find(x => x.id === card.dataset.id); if (!it) return;
+    S.items = S.items.filter(x => x.id !== it.id);
+    commit();
+    toast(`Removed “${it.sub.slice(0, 48)}”`, "Undo", () => { S.items.unshift(it); commit(); });
+  }
+  if (card && b.dataset.act === "edit") openItemModal(card.dataset.id);
+});
+
+let dragCardId = null;
+document.addEventListener("dragstart", e => {
+  const card = e.target.closest && e.target.closest(".card");
+  if (!card || RO) return;
+  dragCardId = card.dataset.id;
+  e.dataTransfer.setData("application/x-vb-card", dragCardId);
+  e.dataTransfer.effectAllowed = "move";
+  card.classList.add("dragging");
+});
+document.addEventListener("dragend", e => {
+  dragCardId = null;
+  const card = e.target.closest && e.target.closest(".card");
+  if (card) card.classList.remove("dragging");
+});
+
+/* external drags (files / text from Outlook & Teams) get a page veil */
+let dragDepth = 0;
+const isExternalDrag = dt => dt && Array.from(dt.types || []).some(t => t === "Files" || t === "text/plain" || t === "text/html") && !Array.from(dt.types || []).includes("application/x-vb-card");
+document.addEventListener("dragenter", e => {
+  if (RO || !isExternalDrag(e.dataTransfer)) return;
+  dragDepth++;
+  document.body.classList.add("dragging-in");
+});
+document.addEventListener("dragleave", () => {
+  if (dragDepth > 0 && --dragDepth === 0) document.body.classList.remove("dragging-in");
+});
+document.addEventListener("dragover", e => {
+  const col = e.target.closest && e.target.closest(".col");
+  if (RO) return;
+  e.preventDefault();
+  document.querySelectorAll(".col.hot").forEach(c => c !== col && c.classList.remove("hot"));
+  if (col) { col.classList.add("hot"); e.dataTransfer.dropEffect = dragCardId ? "move" : "copy"; }
+});
+document.addEventListener("drop", async e => {
+  e.preventDefault();
+  dragDepth = 0; document.body.classList.remove("dragging-in");
+  document.querySelectorAll(".col.hot").forEach(c => c.classList.remove("hot"));
+  if (RO) return;
+  const col = e.target.closest && e.target.closest(".col");
+  const catId = col ? col.dataset.cat : null;
+  const dt = e.dataTransfer;
+  const cardId = dt.getData("application/x-vb-card");
+  if (cardId) {
+    if (!catId) return;
+    const it = S.items.find(x => x.id === cardId);
+    if (it && it.cat !== catId) { it.cat = catId; commit(); }
+    return;
+  }
+  if (dt.files && dt.files.length) {
+    const files = Array.from(dt.files).slice(0, 30);
+    for (const f of files) {
+      let fields = null;
+      try {
+        if (/\.msg$/i.test(f.name)) fields = parseMsg(await f.arrayBuffer());
+        else {
+          const text = await f.text();
+          fields = /^(received|from|subject|date|to|mime-version):/im.test(text) ? parseEml(text) : parseLoose(text, "");
+          if (!fields.sub) fields.sub = f.name.replace(/\.(eml|msg|txt|json)$/i, "");
+        }
+      } catch { fields = { sub: f.name.replace(/\.(eml|msg)$/i, ""), src: "email" }; }
+      if (catId) quickAdd(fields, catId, "drop");
+      else if (files.length > 1) quickAdd(fields, "u", "drop");
+      else openAddModal(fields, "drop");
+    }
+    return;
+  }
+  const html = dt.getData("text/html"), text = dt.getData("text/plain");
+  if (text || html) {
+    const fields = parseLoose(text || html.replace(/<[^>]+>/g, " "), html);
+    if (catId) quickAdd(fields, catId, "drop");
+    else openAddModal(fields, "drop");
+  }
+});
+
+document.addEventListener("paste", e => {
+  if (RO) return;
+  if (e.target.closest("input, textarea, select, .modal, #drawer")) return;
+  const text = e.clipboardData.getData("text/plain");
+  const html = e.clipboardData.getData("text/html");
+  if (!text && !html) return;
+  e.preventDefault();
+  openAddModal(parseLoose(text || html.replace(/<[^>]+>/g, " "), html), "paste");
+});
+
+/* ---------------- modals ---------------- */
+
+function openModal(html) { $("#modal").innerHTML = html; $("#veil").classList.add("open"); const f = $("#modal input, #modal select"); if (f) f.focus(); }
+function closeModal() { $("#veil").classList.remove("open"); try { sessionStorage.removeItem("vb-draft"); } catch {} }
+$("#veil").addEventListener("click", e => { if (e.target.id === "veil") closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeDrawer(); } });
+
+function catOptions(sel) {
+  return allCats().map(c => `<option value="${c.id}" ${c.id === sel ? "selected" : ""}>${esc(c.name)}</option>`).join("");
+}
+
+function openAddModal(fields, via, editId) {
+  fields = fields || {};
+  try { if (!editId) sessionStorage.setItem("vb-draft", JSON.stringify({ fields, via })); } catch {}
+  openModal(`
+    <h2>${editId ? "Edit item" : "Add to the board"}</h2>
+    <label for="f-sub">Subject / summary</label>
+    <input id="f-sub" value="${esc(fields.sub || "")}" maxlength="300">
+    <div class="grid2">
+      <div>
+        <label for="f-from">From</label>
+        <input id="f-from" value="${esc(fields.from || "")}" placeholder="Name <email>">
+      </div>
+      <div>
+        <label for="f-src">Source</label>
+        <select id="f-src">
+          <option value="email" ${fields.src !== "teams" ? "selected" : ""}>Email</option>
+          <option value="teams" ${fields.src === "teams" ? "selected" : ""}>Teams message</option>
+        </select>
+      </div>
+      <div>
+        <label for="f-date">Received</label>
+        <input id="f-date" type="date" value="${fields.rcv ? fields.rcv.slice(0, 10) : ""}">
+      </div>
+      <div>
+        <label for="f-cat">Category</label>
+        <select id="f-cat">${catOptions(fields.cat || (S.cats[0] && S.cats[0].id))}</select>
+      </div>
+    </div>
+    <label for="f-note">Note (optional)</label>
+    <input id="f-note" value="${esc(fields.note || "")}" maxlength="300">
+    <div class="m-acts">
+      <button class="btn" data-m="cancel">Cancel</button>
+      <button class="btn primary" data-m="save">${editId ? "Save" : "Add item"}</button>
+    </div>`);
+  $("#modal").onclick = e => {
+    const b = e.target.closest("button[data-m]"); if (!b) return;
+    if (b.dataset.m === "cancel") return closeModal();
+    const f = {
+      sub: $("#f-sub").value.trim(), from: $("#f-from").value.trim(),
+      src: $("#f-src").value, note: $("#f-note").value.trim(),
+      rcv: $("#f-date").value ? new Date($("#f-date").value + "T12:00:00").toISOString() : (fields.rcv || null),
+      mid: fields.mid || null
+    };
+    if (!f.sub) { $("#f-sub").focus(); return; }
+    if (editId) {
+      const it = S.items.find(x => x.id === editId);
+      if (it) Object.assign(it, f, { cat: $("#f-cat").value });
+      commit();
+    } else quickAdd(f, $("#f-cat").value, via || "manual");
+    closeModal();
+  };
+}
+
+function openItemModal(id) {
+  const it = S.items.find(x => x.id === id); if (!it) return;
+  openAddModal({ sub: it.sub, from: it.from, src: it.src, rcv: it.rcv, note: it.note, cat: it.cat, mid: it.mid }, it.via, id);
+}
+
+function openCatModal(catId) {
+  const c = catId ? S.cats.find(x => x.id === catId) : null;
+  const usedSlots = new Set(S.cats.map(x => x.slot));
+  const freeSlot = [0, 1, 2, 3, 4, 5, 6, 7].find(s => !usedSlots.has(s));
+  const slot = c ? c.slot : freeSlot;
+  openModal(`
+    <h2>${c ? "Edit category" : "New category"}</h2>
+    <label for="c-name">Name on the board</label>
+    <input id="c-name" value="${esc(c ? c.name : "")}" maxlength="40" placeholder="e.g. Escalations">
+    <label for="c-ol">Outlook category it maps to</label>
+    <input id="c-ol" value="${esc(c ? c.outlook : "")}" maxlength="60" placeholder="e.g. Red category — used by the automation">
+    <label>Color</label>
+    <div class="swatches" id="c-swatches">
+      ${[0, 1, 2, 3, 4, 5, 6, 7].map(s => `<button type="button" data-slot="${s}" aria-pressed="${s === slot}" aria-label="Color ${s + 1}" style="background:var(--cat-${s});${usedSlots.has(s) && (!c || c.slot !== s) ? "opacity:.25;pointer-events:none" : ""}"></button>`).join("")}
+    </div>
+    <div class="m-acts">
+      ${c ? '<button class="btn danger" data-m="del" style="margin-right:auto">Delete</button>' : ""}
+      <button class="btn" data-m="cancel">Cancel</button>
+      <button class="btn primary" data-m="save">${c ? "Save" : "Create"}</button>
+    </div>`);
+  let chosen = slot;
+  $("#c-swatches").onclick = e => {
+    const b = e.target.closest("button[data-slot]"); if (!b) return;
+    chosen = +b.dataset.slot;
+    $("#c-swatches").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  };
+  $("#modal").onclick = e => {
+    const b = e.target.closest("button[data-m]"); if (!b) return;
+    if (b.dataset.m === "cancel") return closeModal();
+    if (b.dataset.m === "del") {
+      S.items.forEach(it => { if (it.cat === c.id) it.cat = "u"; });
+      S.cats = S.cats.filter(x => x.id !== c.id);
+      commit(); closeModal();
+      toast(`Deleted “${c.name}” — its items moved to Uncategorized`);
+      return;
+    }
+    const name = $("#c-name").value.trim(); if (!name) { $("#c-name").focus(); return; }
+    const ol = $("#c-ol").value.trim();
+    if (c) Object.assign(c, { name, outlook: ol, slot: chosen });
+    else S.cats.push({ id: uid(), name, outlook: ol, slot: chosen });
+    commit(); closeModal();
+  };
+}
+
+/* ---------------- CSV export ---------------- */
+
+$("#btn-export").addEventListener("click", async () => {
+  const rows = [["added", "received", "category", "outlook_category", "source", "subject", "from", "via", "added_by", "note"]];
+  for (const it of S.items) {
+    const c = catById(it.cat);
+    rows.push([it.added, it.rcv || "", c.name, c.outlook || "", it.src, it.sub, it.from, it.via, it.by || "", it.note || ""]);
+  }
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  if (!dl) dl = await window.claude?.use?.("downloads");
+  if (!dl) { toast("Downloads aren't available in this view."); return; }
+  const name = "triage-volume-" + new Date().toISOString().slice(0, 10);
+  try { await dl.save({ filename: name + ".csv", data: csv }); }
+  catch (e) {
+    const code = e && e.code;
+    if (code === "extension_not_enabled" || code === "rejected_extension") {
+      try { await dl.save({ filename: name + ".txt", data: csv }); } catch {}
+    } else if (code !== "declined") toast("Export failed — try again.");
+  }
+});
+
+/* ---------------- Dropbox auto-import (mcp) ---------------- */
+
+const dbx = { status: "init", server: null, listName: null, fetchName: null, staged: [], failed: [], unsub: null, lastSeen: null, importing: false };
+
+async function initMcp() {
+  mcp = await window.claude?.use?.("mcp");
+  if (!mcp) { dbx.status = "unavailable"; renderDrawer(); return; }
+  try {
+    const lt = await mcp.listTools();
+    const srv = (lt.servers || []).find(s => /dropbox/i.test(s.server));
+    if (!srv) { dbx.status = "no-connector"; }
+    else if (srv.authStatus === "needs_reauth") { dbx.status = "reauth"; dbx.server = srv.server; }
+    else if (!srv.tools || !srv.tools.length) { dbx.status = "no-connector"; }
+    else {
+      const pick = want => { const t = srv.tools.find(x => x.name === want) || srv.tools.find(x => x.name.split(/[.:]/).pop() === want); return t && t.name; };
+      dbx.server = srv.server;
+      dbx.listName = pick("list_folder");
+      dbx.fetchName = pick("fetch");
+      if (!dbx.listName || !dbx.fetchName) dbx.status = "no-tools";
+      else { dbx.status = "watching"; startWatch(); }
+    }
+  } catch (e) { mapMcpError(e); }
+  renderDrawer();
+}
+
+function mapMcpError(e) {
+  const code = e && e.code;
+  if (code === "needs_reauth") dbx.status = "reauth";
+  else if (code === "server_not_connected" || code === "selection_required") dbx.status = "no-connector";
+  else if (code === "blocked_by_policy" || code === "approval_required") dbx.status = "blocked";
+  else if (code === "not_granted" || code === "capability_disabled" || code === "capability_removed") dbx.status = "unavailable";
+  else if (code === "tool_error") { dbx.status = "folder-missing"; dbx.err = (e && e.message || "").slice(0, 200); }
+  else dbx.status = "error";
+}
+
+function startWatch() {
+  if (dbx.unsub) { try { dbx.unsub(); } catch {} dbx.unsub = null; }
+  if (!mcp || !dbx.listName) return;
+  const input = { path: S.settings.folder, recursive: false, object_types: ["file"] };
+  dbx.unsub = mcp.watchTool(dbx.server, dbx.listName, input, ev => {
+    if (ev.type === "error") {
+      const code = ev.error && ev.error.code;
+      if (code === "needs_reauth" || code === "server_not_connected" || code === "blocked_by_policy" || code === "approval_required") {
+        dbx.staged = []; mapMcpError(ev.error);
+      } else if (code === "tool_error") { dbx.status = "folder-missing"; }
+      // transient errors: keep last-good staging
+    } else {
+      const p = ev.result && ev.result.payload;
+      const entries = p && Array.isArray(p.entries) ? p.entries : [];
+      const done = new Set(S.settings.processed);
+      dbx.staged = entries.filter(f =>
+        f.object_type === "file" && !done.has(f.file_id) && /\.(json|eml|txt|md)$/i.test(f.name || ""));
+      dbx.lastSeen = ev.result.cache ? ev.result.cache.storedAt : Date.now();
+      dbx.status = "watching";
+    }
+    renderDrawer();
+  }, { refetchInterval: 120000, cache: { staleTime: 60000 } });
+}
+
+async function runImport() {
+  if (dbx.importing || RO) return;
+  dbx.importing = true; renderDrawer();
+  const batch = dbx.staged.slice(0, 25);
+  let ok = 0, dup = 0;
+  dbx.failed = [];
+  for (const f of batch) {
+    try {
+      const r = await mcp.callTool(dbx.server, dbx.fetchName, { id: f.file_id });
+      const p = r.payload || {};
+      const { fields, cat } = parseImported(p.title || f.name, String(p.text || ""));
+      const it = addItem(fields, cat ? cat.id : "u", "auto");
+      if (it) ok++; else dup++;
+      S.settings.processed.push(f.file_id);
+    } catch (e) {
+      const code = e && e.code;
+      if (code === "needs_reauth" || code === "server_not_connected" || code === "blocked_by_policy") { mapMcpError(e); break; }
+      dbx.failed.push(f.name);
+    }
+  }
+  if (S.settings.processed.length > 2000) S.settings.processed = S.settings.processed.slice(-2000);
+  const done = new Set(S.settings.processed);
+  dbx.staged = dbx.staged.filter(f => !done.has(f.file_id));
+  dbx.importing = false;
+  if (ok || dup) {
+    commit();
+    toast(`Imported ${ok} item${ok === 1 ? "" : "s"}${dup ? ` (${dup} duplicate${dup === 1 ? "" : "s"} skipped)` : ""} from Dropbox`);
+  } else renderDrawer();
+  if (mcp && mcp.invalidate) mcp.invalidate(dbx.server, dbx.listName).catch(() => {});
+}
+
+/* ---------------- drawer ---------------- */
+
+function openDrawer() { $("#drawer").classList.add("open"); renderDrawer(); }
+function closeDrawer() { $("#drawer").classList.remove("open"); }
+$("#btn-drawer").addEventListener("click", openDrawer);
+$("#btn-drawer-close").addEventListener("click", closeDrawer);
+
+function dbxStatusLine() {
+  const map = {
+    init: ["idle", "Checking the Dropbox connection…"],
+    unavailable: ["idle", "Connector access isn't available in this view — manual drag &amp; drop still works."],
+    "no-connector": ["warn", "Add the <strong>Dropbox</strong> connector in claude.ai Settings → Connectors to enable auto-import."],
+    reauth: ["bad", "Dropbox needs to be reconnected — claude.ai Settings → Connectors."],
+    blocked: ["bad", "Your organization's policy blocks Dropbox calls from this page."],
+    "no-tools": ["warn", "The connected Dropbox doesn't expose the folder tools this page needs."],
+    "folder-missing": ["warn", `Couldn't read <code>${esc(S.settings.folder)}</code> — create that folder in Dropbox, then it's watched automatically.`],
+    error: ["warn", "Couldn't reach Dropbox just now — it retries on its own."],
+    watching: ["ok", `Watching <code>${esc(S.settings.folder)}</code>${dbx.lastSeen ? ` · checked ${new Date(dbx.lastSeen).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : ""}`]
+  };
+  const [cls, msg] = map[dbx.status] || map.error;
+  return `<div class="status-line"><span class="sdot ${cls}"></span><span>${msg}</span></div>`;
+}
+
+function renderDrawer() {
+  if (!$("#drawer").classList.contains("open")) return;
+  const staged = dbx.staged.slice(0, 8).map(f =>
+    `<div class="sl-row"><span class="sl-name">${esc(f.name)}</span><span class="num">${f.modified_time ? esc(fmtDay(new Date(f.modified_time))) : ""}</span></div>`).join("");
+  const sample = JSON.stringify({ subject: "Renewal question — Fabrikam", from: "Dana Reyes <dana@fabrikam.com>", received: "2026-08-24T14:02:00Z", category: "Blue category", id: "unique-message-id" }, null, 2);
+  $("#drawer-body").innerHTML = `
+    <h3>Auto-import from Outlook</h3>
+    ${dbxStatusLine()}
+    ${dbx.staged.length ? `
+      <div class="staged-list">${staged}${dbx.staged.length > 8 ? `<div class="sl-row"><span class="sl-name">…and ${dbx.staged.length - 8} more</span></div>` : ""}</div>
+      <button class="btn primary" id="btn-import" ${dbx.importing || RO ? "disabled" : ""}>${dbx.importing ? "Importing…" : `Import ${Math.min(dbx.staged.length, 25)} new item${dbx.staged.length === 1 ? "" : "s"}`}</button>
+      ${RO ? '<p>Importing needs write access to this board.</p>' : ""}`
+      : dbx.status === "watching" ? "<p>No new files in the inbox folder. New drops show up here within a couple of minutes.</p>" : ""}
+    ${dbx.failed.length ? `<p style="color:var(--danger)">Couldn't read: ${esc(dbx.failed.join(", "))}</p>` : ""}
+
+    <h3>Watched Dropbox folder</h3>
+    <div class="field-row">
+      <input id="set-folder" value="${esc(S.settings.folder)}" ${RO ? "disabled" : ""} aria-label="Dropbox folder path">
+      ${RO ? "" : '<button class="btn small" id="btn-folder-save">Save</button>'}
+    </div>
+
+    <h3>Your initials on new cards</h3>
+    <div class="field-row">
+      <input id="set-name" value="${esc(lsGet("vb-name") || "")}" maxlength="12" placeholder="e.g. MG" aria-label="Your initials">
+      <button class="btn small" id="btn-name-save">Save</button>
+    </div>
+
+    <h3>How the Outlook automation works</h3>
+    <p>Applying an Outlook category files the message onto this board — no dragging needed:</p>
+    <ol>
+      <li>In Dropbox, create the folder <code>${esc(S.settings.folder)}</code>.</li>
+      <li>In <strong>Power Automate</strong>, create a scheduled flow (every 15 min) with an <em>Office&nbsp;365 Outlook → Send an HTTP request</em> step:<br>
+      <code>GET /v1.0/me/messages?$filter=categories/any(c:c eq 'Blue category') and not(categories/any(c:c eq 'Logged'))&amp;$select=id,subject,from,receivedDateTime,categories</code></li>
+      <li>For each result, add a <em>Dropbox → Create file</em> step in the folder above, file name <code>@{item()?['id']}.json</code>, with this shape:</li>
+    </ol>
+    <pre>${esc(sample)}</pre>
+    <ol start="4">
+      <li>Then a second <em>Send an HTTP request</em> (PATCH the message) to add a <code>Logged</code> category so it isn't picked up twice.</li>
+      <li>This page watches the folder and stages new files — one click imports them into the matching column. The <em>Outlook category</em> field on each column (⋯ menu) is what the <code>category</code> value matches against.</li>
+    </ol>
+    <p>Repeat the flow per category you care about, or use one flow with a broader filter — the board routes each file by its <code>category</code> value. Files that don't match any column land in Uncategorized. A full walkthrough lives in the project README.</p>`;
+  const imp = $("#btn-import"); if (imp) imp.onclick = runImport;
+  const fs = $("#btn-folder-save"); if (fs) fs.onclick = () => {
+    const v = $("#set-folder").value.trim();
+    if (!v.startsWith("/")) { toast("Folder path must start with /"); return; }
+    S.settings.folder = v; commit(); startWatch(); renderDrawer();
+  };
+  $("#btn-name-save").onclick = () => { lsSet("vb-name", $("#set-name").value.trim()); toast("Saved — new cards you add will carry your initials."); };
+}
+
+/* ---------------- boot ---------------- */
+
+window.__vb = { parseEml, parseMsg, parseLoose, parseImported }; // console/test access to the parsers
+
+$("#btn-add").addEventListener("click", () => openAddModal(null, "manual"));
+addEventListener("resize", () => { clearTimeout(renderChart._t); renderChart._t = setTimeout(renderChart, 150); });
+
+(async function boot() {
+  try {
+    const r = await fetch("data/state.json?v=" + Date.now());
+    if (r.ok) S = migrate(await r.json());
+  } catch {}
+  render();
+  // restore a draft that a conflict reload interrupted
+  try {
+    const d = sessionStorage.getItem("vb-draft");
+    if (d) { const { fields, via } = JSON.parse(d); openAddModal(fields, via); }
+  } catch {}
+  // resolve capabilities in the background; page works without them
+  Promise.resolve(window.claude?.use?.("artifact")).then(a => {
+    art = a;
+    if (!a) { savingUnavailable = true; chip("Not connected — changes stay on this screen only", 5000); }
+  });
+  initMcp();
+})();
+
+})();
+</script>
