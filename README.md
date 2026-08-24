@@ -117,6 +117,18 @@ non-matching categories into Uncategorized, and updates the published board.
    board, and moves processed files to `inbox/processed/`. When the inbox is
    empty it does nothing.
 
+
+### Teams trigger word
+
+Two optional companion flows let the team file Teams messages by typing
+`#track` (recipes: guide Stages 10–11): one on the *When keywords are
+mentioned* trigger for channels, one on *When a new chat message is added*
+for group chats (quota caveat: that trigger fires on every chat message).
+Both push `{"type":"teams","subject","from","received","id"}` files into
+`inbox/`; the sweep strips HTML and the `#track` token, routes by the
+category named right after it (`#track job evaluation …`), and files
+unmatched messages in Uncategorized. Teams cards never thread-merge.
+
 ### Inbox file format
 
 Any `.json` file in `inbox/` with this shape (only `subject` is required):
