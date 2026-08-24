@@ -79,7 +79,7 @@ non-matching categories into Uncategorized, and updates the published board.
           "subject": "@{item()?['subject']}",
           "from": "@{item()?['from']?['emailAddress']?['name']} <@{item()?['from']?['emailAddress']?['address']}>",
           "received": "@{item()?['receivedDateTime']}",
-          "category": "@{first(item()?['categories'])}",
+          "category": "@{coalesce(first(intersection(item()?['categories'], createArray('Promotion','Data Request','Other','Reorg','Job Evaluation','Market Adjustment','New Position','Research','Benchmarking'))), first(item()?['categories']))}",
           "id": "@{item()?['id']}"
         }
         ```
