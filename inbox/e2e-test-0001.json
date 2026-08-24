@@ -1,0 +1,7 @@
+{
+  "subject": "Pipeline test — benchmarking data pull",
+  "from": "Pipeline Test <test@example.com>",
+  "received": "2026-08-24T11:30:00Z",
+  "category": "Benchmarking",
+  "id": "e2e-test-message-0001"
+}
