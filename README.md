@@ -120,14 +120,15 @@ non-matching categories into Uncategorized, and updates the published board.
 
 ### Teams trigger word
 
-Two optional companion flows let the team file Teams messages by typing
-`#track` (recipes: guide Stages 10–11): one on the *When keywords are
-mentioned* trigger for channels, one on *When a new chat message is added*
-for group chats (quota caveat: that trigger fires on every chat message).
-Both push `{"type":"teams","subject","from","received","id"}` files into
-`inbox/`; the sweep strips HTML and the `#track` token, routes by the
-category named right after it (`#track job evaluation …`), and files
-unmatched messages in Uncategorized. Teams cards never thread-merge.
+Two optional companion flows file Teams messages (recipes: guide Stages
+10–11): a `#track` keyword flow for channels (*When keywords are
+mentioned*), and a *For a selected message* flow — ⋯ menu → "Track on
+board" — that works in group chats and channels, runs only when invoked,
+and pops an adaptive-card category picker. Both push
+`{"type":"teams","subject","from","received","id","category"?}` files into
+`inbox/`; the sweep strips HTML, honors an explicit `category`, otherwise
+routes by the words after `#track`, and files the rest in Uncategorized.
+Teams cards never thread-merge.
 
 ### Inbox file format
 
