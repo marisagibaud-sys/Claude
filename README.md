@@ -24,6 +24,11 @@ saving, Outlook auto-import, and CSV export.
 - **Outlook category automation** — apply a category in Outlook and the message
   lands on the board without any dragging (setup below).
 
+Default columns mirror the team's Outlook categories: Promotion, Other, Market
+Adjustment, Reorg, Job Evaluation, New Position, Research, Data Request, and
+Benchmarking (neutral, matching its uncolored Outlook chip), plus an
+Uncategorized bucket for anything that doesn't match.
+
 ## The Outlook category automation
 
 Artifacts can't receive webhooks, so the bridge is a folder in Dropbox: Power
@@ -50,10 +55,10 @@ Board column whose "Outlook category" field matches
    - **Action:** *Office 365 Outlook → Send an HTTP request*:
 
      ```
-     GET https://graph.microsoft.com/v1.0/me/messages?$filter=categories/any(c:c eq 'Blue category') and not(categories/any(c:c eq 'Logged'))&$select=id,subject,from,receivedDateTime,categories
+     GET https://graph.microsoft.com/v1.0/me/messages?$filter=categories/any(c:c eq 'Promotion') and not(categories/any(c:c eq 'Logged'))&$select=id,subject,from,receivedDateTime,categories
      ```
 
-     (Swap `'Blue category'` for whichever categories you track, or run one flow
+     (Swap `'Promotion'` for whichever categories you track, or run one flow
      per category.)
    - **Apply to each** result (`body('Send_an_HTTP_request')?['value']`):
      1. *Dropbox → Create file* in the folder above, file name

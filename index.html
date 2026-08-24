@@ -18,7 +18,7 @@
     --danger: #d03b3b;
     --cat-0: #2a78d6; --cat-1: #eb6834; --cat-2: #1baf7a; --cat-3: #eda100;
     --cat-4: #e87ba4; --cat-5: #008300; --cat-6: #4a3aa7; --cat-7: #e34948;
-    --cat-u: #a3a19b;
+    --cat-u: #a3a19b; --cat-n: #66645e;
     --shadow: 0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.05);
   }
   @media (prefers-color-scheme: dark) {
@@ -38,7 +38,7 @@
       --danger: #e66767;
       --cat-0: #3987e5; --cat-1: #d95926; --cat-2: #199e70; --cat-3: #c98500;
       --cat-4: #d55181; --cat-5: #008300; --cat-6: #9085e9; --cat-7: #e66767;
-      --cat-u: #7a786f;
+      --cat-u: #7a786f; --cat-n: #b3b1a9;
       --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
     }
   }
@@ -58,7 +58,7 @@
     --danger: #e66767;
     --cat-0: #3987e5; --cat-1: #d95926; --cat-2: #199e70; --cat-3: #c98500;
     --cat-4: #d55181; --cat-5: #008300; --cat-6: #9085e9; --cat-7: #e66767;
-    --cat-u: #7a786f;
+    --cat-u: #7a786f; --cat-n: #b3b1a9;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
   }
 
@@ -333,10 +333,15 @@
 {
   "v": 1,
   "cats": [
-    { "id": "c1", "name": "New requests",  "outlook": "Blue category",   "slot": 0 },
-    { "id": "c2", "name": "Follow-up",     "outlook": "Orange category", "slot": 1 },
-    { "id": "c3", "name": "Resolved",      "outlook": "Green category",  "slot": 2 },
-    { "id": "c4", "name": "FYI only",      "outlook": "Yellow category", "slot": 3 }
+    { "id": "prm", "name": "Promotion",         "outlook": "Promotion",         "slot": 0 },
+    { "id": "oth", "name": "Other",             "outlook": "Other",             "slot": 1 },
+    { "id": "mad", "name": "Market Adjustment", "outlook": "Market Adjustment", "slot": 2 },
+    { "id": "rog", "name": "Reorg",             "outlook": "Reorg",             "slot": 3 },
+    { "id": "jev", "name": "Job Evaluation",    "outlook": "Job Evaluation",    "slot": 4 },
+    { "id": "npo", "name": "New Position",      "outlook": "New Position",      "slot": 5 },
+    { "id": "rsh", "name": "Research",          "outlook": "Research",          "slot": 6 },
+    { "id": "drq", "name": "Data Request",      "outlook": "Data Request",      "slot": 7 },
+    { "id": "bmk", "name": "Benchmarking",      "outlook": "Benchmarking",      "slot": "n" }
   ],
   "items": [],
   "settings": { "folder": "/Claude/Email Tracker/Inbox", "processed": [] }
@@ -419,6 +424,8 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
 function migrate(raw) {
   if (!raw || typeof raw !== "object" || !Array.isArray(raw.cats) || !Array.isArray(raw.items)) return DEFAULT_STATE;
+  // an untouched board on the original placeholder categories picks up the current defaults
+  if (!raw.items.length && raw.cats.length === 4 && raw.cats.every(c => /^c[1-4]$/.test(c.id))) return DEFAULT_STATE;
   raw.settings = Object.assign({ folder: "/Claude/Email Tracker/Inbox", processed: [] }, raw.settings || {});
   return raw;
 }
@@ -828,7 +835,7 @@ function renderBoard() {
       <div class="cards">${cards || `<div class="empty">Drop emails or cards here</div>`}</div>
     </div>`;
   }).join("");
-  $("#board").innerHTML = cols + (RO || S.cats.length >= 8 ? "" : `<button class="add-col" id="btn-add-cat">+ New category</button>`);
+  $("#board").innerHTML = cols + (RO || S.cats.length >= 9 ? "" : `<button class="add-col" id="btn-add-cat">+ New category</button>`);
 }
 
 /* ---------------- tooltips (chart) ---------------- */
@@ -1016,8 +1023,9 @@ function openItemModal(id) {
 
 function openCatModal(catId) {
   const c = catId ? S.cats.find(x => x.id === catId) : null;
+  const SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, "n"]; // 8 validated hues + one neutral (uncolored Outlook categories)
   const usedSlots = new Set(S.cats.map(x => x.slot));
-  const freeSlot = [0, 1, 2, 3, 4, 5, 6, 7].find(s => !usedSlots.has(s));
+  const freeSlot = SLOTS.find(s => !usedSlots.has(s));
   const slot = c ? c.slot : freeSlot;
   openModal(`
     <h2>${c ? "Edit category" : "New category"}</h2>
@@ -1027,7 +1035,7 @@ function openCatModal(catId) {
     <input id="c-ol" value="${esc(c ? c.outlook : "")}" maxlength="60" placeholder="e.g. Red category — used by the automation">
     <label>Color</label>
     <div class="swatches" id="c-swatches">
-      ${[0, 1, 2, 3, 4, 5, 6, 7].map(s => `<button type="button" data-slot="${s}" aria-pressed="${s === slot}" aria-label="Color ${s + 1}" style="background:var(--cat-${s});${usedSlots.has(s) && (!c || c.slot !== s) ? "opacity:.25;pointer-events:none" : ""}"></button>`).join("")}
+      ${SLOTS.map(s => `<button type="button" data-slot="${s}" aria-pressed="${s === slot}" aria-label="${s === "n" ? "Neutral" : "Color " + (s + 1)}" style="background:var(--cat-${s});${usedSlots.has(s) && (!c || c.slot !== s) ? "opacity:.25;pointer-events:none" : ""}"></button>`).join("")}
     </div>
     <div class="m-acts">
       ${c ? '<button class="btn danger" data-m="del" style="margin-right:auto">Delete</button>' : ""}
@@ -1037,7 +1045,7 @@ function openCatModal(catId) {
   let chosen = slot;
   $("#c-swatches").onclick = e => {
     const b = e.target.closest("button[data-slot]"); if (!b) return;
-    chosen = +b.dataset.slot;
+    chosen = b.dataset.slot === "n" ? "n" : +b.dataset.slot;
     $("#c-swatches").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
   };
   $("#modal").onclick = e => {
@@ -1196,7 +1204,7 @@ function renderDrawer() {
   if (!$("#drawer").classList.contains("open")) return;
   const staged = dbx.staged.slice(0, 8).map(f =>
     `<div class="sl-row"><span class="sl-name">${esc(f.name)}</span><span class="num">${f.modified_time ? esc(fmtDay(new Date(f.modified_time))) : ""}</span></div>`).join("");
-  const sample = JSON.stringify({ subject: "Renewal question — Fabrikam", from: "Dana Reyes <dana@fabrikam.com>", received: "2026-08-24T14:02:00Z", category: "Blue category", id: "unique-message-id" }, null, 2);
+  const sample = JSON.stringify({ subject: "Comp review — Fabrikam req", from: "Dana Reyes <dana@fabrikam.com>", received: "2026-08-24T14:02:00Z", category: "Promotion", id: "unique-message-id" }, null, 2);
   $("#drawer-body").innerHTML = `
     <h3>Auto-import from Outlook</h3>
     ${dbxStatusLine()}
@@ -1224,7 +1232,7 @@ function renderDrawer() {
     <ol>
       <li>In Dropbox, create the folder <code>${esc(S.settings.folder)}</code>.</li>
       <li>In <strong>Power Automate</strong>, create a scheduled flow (every 15 min) with an <em>Office&nbsp;365 Outlook → Send an HTTP request</em> step:<br>
-      <code>GET /v1.0/me/messages?$filter=categories/any(c:c eq 'Blue category') and not(categories/any(c:c eq 'Logged'))&amp;$select=id,subject,from,receivedDateTime,categories</code></li>
+      <code>GET /v1.0/me/messages?$filter=categories/any(c:c eq 'Promotion') and not(categories/any(c:c eq 'Logged'))&amp;$select=id,subject,from,receivedDateTime,categories</code></li>
       <li>For each result, add a <em>Dropbox → Create file</em> step in the folder above, file name <code>@{item()?['id']}.json</code>, with this shape:</li>
     </ol>
     <pre>${esc(sample)}</pre>
