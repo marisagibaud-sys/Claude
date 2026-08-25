@@ -28,9 +28,11 @@ controls (see below).
   lands on the board without any dragging (setup below).
 
 Default columns mirror the team's Outlook categories: Promotion, Other, Market
-Adjustment, Reorg, Job Evaluation, New Position, Research, Data Request, and
-Benchmarking (neutral, matching its uncolored Outlook chip), plus an
-Uncategorized bucket for anything that doesn't match.
+Adjustment, Job Description Review/Update, Job Evaluation, New Position,
+TA Support, Reorg, Research, Data Request, and Benchmarking (neutral), plus an
+Uncategorized bucket for anything that doesn't match. Column order follows the
+validated 10-hue chart palette, which is what keeps adjacent chart segments
+colorblind-distinguishable.
 
 ## The Outlook category automation
 
@@ -79,7 +81,7 @@ non-matching categories into Uncategorized, and updates the published board.
           "subject": "@{item()?['subject']}",
           "from": "@{item()?['from']?['emailAddress']?['name']} <@{item()?['from']?['emailAddress']?['address']}>",
           "received": "@{item()?['receivedDateTime']}",
-          "category": "@{coalesce(first(intersection(item()?['categories'], createArray('Promotion','Data Request','Other','Reorg','Job Evaluation','Market Adjustment','New Position','Research','Benchmarking'))), first(item()?['categories']))}",
+          "category": "@{coalesce(first(intersection(item()?['categories'], createArray('Promotion','Data Request','Other','Reorg','Job Evaluation','Market Adjustment','New Position','Research','Benchmarking','TA Support','Job Description Review/Update'))), first(item()?['categories']))}",
           "id": "@{item()?['id']}",
           "cid": "@{item()?['conversationId']}",
           "imid": "@{item()?['internetMessageId']}"

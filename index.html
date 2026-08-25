@@ -18,6 +18,7 @@
     --danger: #d03b3b;
     --cat-0: #2a78d6; --cat-1: #eb6834; --cat-2: #1baf7a; --cat-3: #eda100;
     --cat-4: #e87ba4; --cat-5: #008300; --cat-6: #4a3aa7; --cat-7: #e34948;
+    --cat-8: #b06f28; --cat-9: #4aa8d8;
     --cat-u: #a3a19b; --cat-n: #66645e;
     --shadow: 0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.05);
   }
@@ -38,6 +39,7 @@
       --danger: #e66767;
       --cat-0: #3987e5; --cat-1: #d95926; --cat-2: #199e70; --cat-3: #c98500;
       --cat-4: #d55181; --cat-5: #008300; --cat-6: #9085e9; --cat-7: #e66767;
+      --cat-8: #a86a26; --cat-9: #3a9cc9;
       --cat-u: #7a786f; --cat-n: #b3b1a9;
       --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
     }
@@ -58,7 +60,8 @@
     --danger: #e66767;
     --cat-0: #3987e5; --cat-1: #d95926; --cat-2: #199e70; --cat-3: #c98500;
     --cat-4: #d55181; --cat-5: #008300; --cat-6: #9085e9; --cat-7: #e66767;
-    --cat-u: #7a786f; --cat-n: #b3b1a9;
+    --cat-8: #a86a26; --cat-9: #3a9cc9;
+      --cat-u: #7a786f; --cat-n: #b3b1a9;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
   }
 
@@ -330,9 +333,11 @@
     { "id": "prm", "name": "Promotion",         "outlook": "Promotion",         "slot": 0 },
     { "id": "oth", "name": "Other",             "outlook": "Other",             "slot": 1 },
     { "id": "mad", "name": "Market Adjustment", "outlook": "Market Adjustment", "slot": 2 },
-    { "id": "rog", "name": "Reorg",             "outlook": "Reorg",             "slot": 3 },
+    { "id": "jdr", "name": "Job Description Review/Update", "outlook": "Job Description Review/Update", "slot": 8 },
     { "id": "jev", "name": "Job Evaluation",    "outlook": "Job Evaluation",    "slot": 4 },
     { "id": "npo", "name": "New Position",      "outlook": "New Position",      "slot": 5 },
+    { "id": "tas", "name": "TA Support",        "outlook": "TA Support",        "slot": 9 },
+    { "id": "rog", "name": "Reorg",             "outlook": "Reorg",             "slot": 3 },
     { "id": "rsh", "name": "Research",          "outlook": "Research",          "slot": 6 },
     { "id": "drq", "name": "Data Request",      "outlook": "Data Request",      "slot": 7 },
     { "id": "bmk", "name": "Benchmarking",      "outlook": "Benchmarking",      "slot": "n" }
@@ -865,7 +870,7 @@ function renderBoard() {
       <div class="cards">${cards || `<div class="empty">Drop emails or cards here</div>`}</div>
     </div>`;
   }).join("");
-  $("#board").innerHTML = cols + (RO || S.cats.length >= 9 ? "" : `<button class="add-col" id="btn-add-cat">+ New category</button>`);
+  $("#board").innerHTML = cols + (RO || S.cats.length >= 11 ? "" : `<button class="add-col" id="btn-add-cat">+ New category</button>`);
 }
 
 /* ---------------- tooltips (chart) ---------------- */
@@ -1059,7 +1064,7 @@ function openItemModal(id) {
 
 function openCatModal(catId) {
   const c = catId ? S.cats.find(x => x.id === catId) : null;
-  const SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, "n"]; // 8 validated hues + one neutral (uncolored Outlook categories)
+  const SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "n"]; // 10 validated hues + one neutral (uncolored Outlook categories)
   const usedSlots = new Set(S.cats.map(x => x.slot));
   const freeSlot = SLOTS.find(s => !usedSlots.has(s));
   const slot = c ? c.slot : freeSlot;
