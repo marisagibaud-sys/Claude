@@ -394,7 +394,7 @@ const SHELL = [
 '  <div class="rail" id="rail" role="group" aria-label="Filters"></div>',
 '  <section id="ledger" aria-label="Archived records" aria-live="polite"></section>',
 '  <p class="foot-hint">',
-'    <span>Drop <strong>.eml</strong> / <strong>.msg</strong> files anywhere — subject, sender, date, and the full body are captured</span>·',
+'    <span>Drop <strong>.eml</strong> / <strong>.msg</strong> emails or <strong>.docx</strong> job descriptions anywhere — the full text is captured</span>·',
 '    <span><kbd>Ctrl</kbd>+<kbd>V</kbd> to paste a copied email</span>·',
 '    <span>Outlook-categorized mail is archived automatically</span>',
 '  </p>',
@@ -952,6 +952,68 @@ function parseMsg(buf) {
   };
 }
 
+/* .docx reader: a docx is a ZIP; pull word/document.xml (DecompressionStream
+   handles the deflate) and flatten it to text — table cells become tabs, so
+   the components table survives as "Label:\tvalue" lines. */
+async function parseDocx(buf) {
+  const u8 = new Uint8Array(buf);
+  const dv = new DataView(buf);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("not zip");
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  const entries = {};
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const csize = dv.getUint32(off + 20, true);
+    const nameLen = dv.getUint16(off + 28, true);
+    const extraLen = dv.getUint16(off + 30, true);
+    const cmtLen = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(off + 46, off + 46 + nameLen));
+    entries[name] = { method, csize, lho };
+    off += 46 + nameLen + extraLen + cmtLen;
+  }
+  async function readEntry(name) {
+    const e = entries[name]; if (!e) return null;
+    const lnameLen = dv.getUint16(e.lho + 26, true);
+    const lextraLen = dv.getUint16(e.lho + 28, true);
+    const start = e.lho + 30 + lnameLen + lextraLen;
+    const data = u8.subarray(start, start + e.csize);
+    if (e.method === 0) return data;
+    if (e.method === 8) {
+      const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    return null;
+  }
+  const docXml = await readEntry("word/document.xml");
+  if (!docXml) throw new Error("no document.xml");
+  const body = new TextDecoder("utf-8").decode(docXml)
+    .replace(/<w:tab[^>]*\/>/g, "\t")
+    .replace(/<w:br[^>]*\/>/g, "\n")
+    .replace(/<\/w:tc>/g, "\t")
+    .replace(/<\/w:(p|tr)>/g, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => { try { return String.fromCodePoint(+n); } catch { return " "; } })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => { try { return String.fromCodePoint(parseInt(n, 16)); } catch { return " "; } })
+    .replace(/&amp;/g, "&");
+  let title = "", created = null;
+  const core = await readEntry("docProps/core.xml");
+  if (core) {
+    const c = new TextDecoder("utf-8").decode(core);
+    title = (c.match(/<dc:title>([^<]*)<\/dc:title>/) || [])[1] || "";
+    const cr = (c.match(/<dcterms:created[^>]*>([^<]*)</) || [])[1];
+    if (cr) { const d = new Date(cr); if (!isNaN(d)) created = d.toISOString(); }
+  }
+  return { sub: title.trim(), from: "", rcv: created, mid: null, body };
+}
+
 function parseLoose(text) {
   const t = String(text || "");
   const grab = re => { const m = t.match(re); return m ? m[1].trim() : ""; };
@@ -1153,7 +1215,7 @@ function renderLedger() {
   const host = $("#ledger");
   const vis = visibleRecs();
   if (!S.recs.length) {
-    host.innerHTML = `<div class="empty-state"><strong>The archive is empty.</strong><br>Drop saved <strong>.eml</strong> / <strong>.msg</strong> files anywhere on this page, paste an email with Ctrl+V, or use + Add record.<br>Everything filed here — including the full job description text — becomes searchable for the whole team.</div>`;
+    host.innerHTML = `<div class="empty-state"><strong>The archive is empty.</strong><br>Drop saved <strong>.eml</strong> / <strong>.msg</strong> emails or <strong>.docx</strong> job descriptions anywhere on this page, paste an email with Ctrl+V, or use + Add record.<br>Everything filed here — including the full job description text — becomes searchable for the whole team.</div>`;
     return;
   }
   if (!vis.length) {
@@ -1262,7 +1324,7 @@ document.addEventListener("drop", async e => {
     let added = 0, pos = 0, dups = 0;
     for (const f of files) {
       const fields = await fileToFields(f);
-      fields.kind = kindGuess(fields.sub, fields.body);
+      if (!fields.kind) fields.kind = kindGuess(fields.sub, fields.body);
       const r = addRec(fields, "drop");
       if (r.dup) { dups++; continue; }
       added++; if (r.r.kind === "pos") pos++;
@@ -1279,6 +1341,19 @@ document.addEventListener("drop", async e => {
 async function fileToFields(f) {
   try {
     if (/\.msg$/i.test(f.name)) return parseMsg(await f.arrayBuffer());
+    if (/\.docx$/i.test(f.name)) {
+      const fields = await parseDocx(await f.arrayBuffer());
+      if (!fields.sub) fields.sub = f.name.replace(/\.docx$/i, "");
+      if (!fields.rcv && f.lastModified) fields.rcv = new Date(f.lastModified).toISOString();
+      // a standalone Word document is almost always the JD itself
+      fields.kind = /new\s*(position|role)|requisition|posting|justification/i.test(fields.sub + " " + f.name) ? "pos" : "jd";
+      return fields;
+    }
+    if (/\.doc$/i.test(f.name)) {
+      // legacy binary .doc can't be read in the browser
+      toast(`"${f.name}" is a legacy .doc file — open it in Word, Save As .docx, and drop that instead (or paste the text).`);
+      return { sub: f.name.replace(/\.doc$/i, ""), kind: "jd", body: "" };
+    }
     const text = await f.text();
     const fields = /^(received|from|subject|date|to|mime-version):/im.test(text) ? parseEml(text) : parseLoose(text);
     if (!fields.sub) fields.sub = f.name.replace(/\.(eml|msg|txt|json)$/i, "");
@@ -1473,6 +1548,7 @@ function renderDrawer() {
     <h3>Backfilling the legacy history</h3>
     <ol>
       <li><strong>Bulk drag &amp; drop</strong> — in Outlook, select any number of old emails and drag them into a desktop folder (they save as .msg), then drop the whole batch anywhere on this page. Kind is guessed from the subject; skim and correct after.</li>
+      <li><strong>Word documents</strong> — drop <strong>.docx</strong> job description files directly; the full text is extracted (components table included) and the record is filed as a Job Description. Legacy <em>.doc</em> files must be re-saved as .docx in Word first.</li>
       <li><strong>One-time flow run</strong> — point the Power Automate flow's Graph query at the past instead of the present, e.g. add <code>receivedDateTime ge 2019-01-01</code> to the <code>$filter</code>, and let it push the history into <code>archive-inbox/</code> in batches.</li>
     </ol>
     <p>Duplicates are skipped automatically (by message id, and by identical subject + date), so overlapping backfills are safe.</p>
@@ -1492,7 +1568,7 @@ function renderDrawer() {
 
 /* ---------------- boot ---------------- */
 
-window.__pa = { parseEml, parseMsg, parseLoose, mimeText, stripHtml, decompressRtf, rtfToText, kindGuess, titleFromSub, extractSpecs, specTitle, assemble }; // console/test access
+window.__pa = { parseEml, parseMsg, parseDocx, parseLoose, mimeText, stripHtml, decompressRtf, rtfToText, kindGuess, titleFromSub, extractSpecs, specTitle, assemble }; // console/test access
 
 $("#btn-add").addEventListener("click", () => openRecModal(null, null, "manual"));
 addEventListener("resize", () => { clearTimeout(renderChart._t); renderChart._t = setTimeout(renderChart, 150); });

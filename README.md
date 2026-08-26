@@ -196,7 +196,9 @@ Where the board counts conversations, the archive **preserves them**:
 - **Coverage chart** — records per year, split by kind, so gaps still waiting
   on backfill are visible at a glance (click a bar to filter that year).
 - **Backfill-friendly intake** — drop batches of `.eml`/`.msg` files saved
-  from Outlook anywhere on the page, paste an email, or add records manually.
+  from Outlook anywhere on the page, drop `.docx` job description documents
+  directly (full text extracted, filed as a JD), paste an email, or add
+  records manually.
   Duplicates (by message id, or identical subject + date) are skipped, so
   overlapping backfills are safe.
 - **Export** — a CSV index (one row per record, components included) or a
