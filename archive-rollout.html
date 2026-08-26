@@ -1,0 +1,401 @@
+<title>Position Archive Rollout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --line: #e1e0d9;
+    --baseline: #c3c2b7;
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --hot: rgba(42, 120, 214, 0.08);
+    --pos: #008300;
+    --jd: #a05e17;
+    --done: #0ca30c;
+    --shadow: 0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --line: #2c2c2a;
+      --baseline: #383835;
+      --accent: #3987e5;
+      --accent-ink: #ffffff;
+      --hot: rgba(57, 135, 229, 0.14);
+      --pos: #2fae53;
+      --jd: #cd9250;
+      --done: #2fae53;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --line: #2c2c2a;
+    --baseline: #383835;
+    --accent: #3987e5;
+    --accent-ink: #ffffff;
+    --hot: rgba(57, 135, 229, 0.14);
+    --pos: #2fae53;
+    --jd: #cd9250;
+    --done: #2fae53;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14.5px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 0 24px 90px; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  code, pre {
+    font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+    font-size: 12px;
+  }
+  code { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+  pre {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 9px;
+    padding: 12px 14px; overflow-x: auto; margin: 10px 0; line-height: 1.5;
+  }
+  pre code { background: none; border: none; padding: 0; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
+  button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* header */
+  header { padding: 44px 0 8px; }
+  .kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 9px; }
+  .kicker .glyph {
+    width: 24px; height: 24px; border-radius: 7px;
+    background: var(--accent); color: var(--accent-ink);
+    display: inline-grid; place-items: center;
+  }
+  h1 {
+    font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+    font-weight: 780; font-size: clamp(30px, 5.5vw, 42px); line-height: 1.06;
+    letter-spacing: -0.015em; margin: 12px 0 12px; text-wrap: balance;
+  }
+  .lede { color: var(--ink-2); font-size: 16px; max-width: 62ch; margin: 0; }
+  .links {
+    display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 6px;
+  }
+  .link-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+    padding: 6px 13px; font-size: 13px; font-weight: 500; color: var(--ink);
+    text-decoration: none; box-shadow: var(--shadow);
+  }
+  .link-chip:hover { border-color: var(--accent); }
+  .link-chip .k { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* progress */
+  .progress {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 11px;
+    box-shadow: var(--shadow); padding: 12px 16px; margin: 22px 0 0;
+    font-size: 13px; color: var(--ink-2);
+  }
+  .progress .bar { flex: 1; height: 7px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .progress .fill { height: 100%; width: 0; background: var(--done); border-radius: 99px; transition: width .25s; }
+  @media (prefers-reduced-motion: reduce) { .progress .fill { transition: none; } }
+  .progress .n { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); white-space: nowrap; }
+
+  /* parts & stages */
+  .part {
+    display: flex; align-items: baseline; gap: 12px; margin: 46px 0 6px;
+  }
+  .part h2 {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-size: 22px; font-weight: 750; margin: 0; letter-spacing: -0.01em;
+  }
+  .part .who { color: var(--muted); font-size: 12.5px; }
+  .part .rule { flex: 1; border-top: 1px solid var(--line); transform: translateY(-4px); }
+
+  .stage {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 13px;
+    box-shadow: var(--shadow); margin: 14px 0; padding: 18px 20px 16px;
+  }
+  .stage.done { border-color: color-mix(in srgb, var(--done) 45%, var(--line)); }
+  .stage-head { display: flex; align-items: flex-start; gap: 13px; }
+  .stage-check { margin-top: 2px; }
+  .stage-check input {
+    width: 19px; height: 19px; accent-color: var(--done); cursor: pointer;
+  }
+  .stage-head .t { flex: 1; min-width: 0; }
+  .stage-head h3 {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-size: 16.5px; font-weight: 700; margin: 0; letter-spacing: -0.005em;
+  }
+  .stage.done .stage-head h3 { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  .stage-head .meta { color: var(--muted); font-size: 12px; margin-top: 1px; }
+  .stage p, .stage li { color: var(--ink-2); font-size: 13.5px; }
+  .stage p { margin: 9px 0; }
+  .stage strong { color: var(--ink); }
+  .stage ol, .stage ul { margin: 8px 0; padding-left: 22px; }
+  .stage li { margin: 5px 0; }
+  .stage li::marker { color: var(--muted); font-weight: 600; }
+  .why {
+    border-left: 3px solid var(--accent); background: var(--hot);
+    border-radius: 0 8px 8px 0; padding: 8px 12px; margin: 10px 0;
+    font-size: 13px; color: var(--ink-2);
+  }
+  .why strong { color: var(--ink); }
+  .pill { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 11.5px; font-weight: 600; }
+  .pill.pos { background: color-mix(in srgb, var(--pos) 12%, transparent); color: var(--pos); }
+  .pill.jd { background: color-mix(in srgb, var(--jd) 14%, transparent); color: var(--jd); }
+
+  /* announcement draft */
+  .draft {
+    position: relative;
+    background: var(--page); border: 1px dashed var(--baseline); border-radius: 10px;
+    padding: 14px 16px; margin: 10px 0; font-size: 13.5px; color: var(--ink);
+  }
+  .draft p { color: var(--ink); margin: 8px 0; }
+  .draft .copy {
+    position: absolute; top: 10px; right: 10px;
+    border: 1px solid var(--line); background: var(--surface); border-radius: 7px;
+    padding: 4px 10px; font-size: 12px; font-weight: 600; color: var(--ink-2);
+  }
+  .draft .copy:hover { border-color: var(--accent); color: var(--ink); }
+
+  /* troubleshooting table */
+  .ts { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 10px 0; }
+  .ts .row { display: grid; grid-template-columns: minmax(150px, 2fr) 3fr; border-top: 1px solid var(--line); }
+  .ts .row:first-child { border-top: none; }
+  .ts .c { padding: 9px 13px; font-size: 13px; }
+  .ts .c:first-child { font-weight: 600; background: var(--page); border-right: 1px solid var(--line); }
+  .ts .c:last-child { color: var(--ink-2); }
+  @media (max-width: 560px) {
+    .ts .row { grid-template-columns: 1fr; }
+    .ts .c:first-child { border-right: none; border-bottom: 1px solid var(--line); }
+  }
+
+  footer { margin-top: 44px; color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">
+      <span class="glyph" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M1.5 4.5h12M2.5 4.5v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-7M1.5 2.5h12v2h-12v-2ZM5.7 7h3.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      Position Archive · launch runbook
+    </div>
+    <h1>From one mailbox to the whole team</h1>
+    <p class="lede">The archive is already built and published. This is the path from here to "the team's institutional record": four stages to get it online and filled, five to bring everyone in. Check stages off as you go — this page remembers your progress on this device.</p>
+    <div class="links">
+      <a class="link-chip" href="https://claude.ai/code/artifact/28220cf0-91d7-437f-b9cc-e3457853ca62" target="_blank" rel="noopener"><span class="k">App</span> Position Archive</a>
+      <a class="link-chip" href="https://github.com/marisagibaud-sys/Claude/blob/claude/email-archive-positions-v00ubh/archive-inbox/README.md" target="_blank" rel="noopener"><span class="k">Recipe</span> archive-inbox/README.md</a>
+    </div>
+    <div class="progress" role="status">
+      <span>Progress</span>
+      <div class="bar"><div class="fill" id="p-fill"></div></div>
+      <span class="n" id="p-n">0 of 9</span>
+    </div>
+  </header>
+
+  <div class="part"><h2>Part 1 — Get it online</h2><span class="who">you, this week</span><span class="rule"></span></div>
+
+  <section class="stage" data-stage="s1">
+    <div class="stage-head">
+      <span class="stage-check"><input type="checkbox" aria-label="Mark stage 1 done"></span>
+      <div class="t"><h3>1 · Open it and make it yours</h3><div class="meta">≈ 5 minutes</div></div>
+    </div>
+    <ol>
+      <li>Open the <a href="https://claude.ai/code/artifact/28220cf0-91d7-437f-b9cc-e3457853ca62" target="_blank" rel="noopener">Position Archive</a>. It is already live — private to you until you share it in Stage&nbsp;6.</li>
+      <li>Click <strong>Guide</strong> (top right) and save your initials — records you file will carry them.</li>
+      <li>File one test email: drag a saved <code>.msg</code> or <code>.eml</code> onto the page (or use <strong>+ Add record</strong>). Confirm the components — Grade, Salary Range, FLSA, Reports&nbsp;to, and the rest — were read out of the body automatically. Fix anything with <strong>Edit</strong>, or delete the test.</li>
+    </ol>
+    <div class="why"><strong>Why first:</strong> thirty seconds of dragging one real email tells you the parser handles your format before you invest in the flow or the backfill.</div>
+  </section>
+
+  <section class="stage" data-stage="s2">
+    <div class="stage-head">
+      <span class="stage-check"><input type="checkbox" aria-label="Mark stage 2 done"></span>
+      <div class="t"><h3>2 · Seed a starter set</h3><div class="meta">≈ 30 minutes</div></div>
+    </div>
+    <ol>
+      <li>In Outlook, pick <strong>15–25 representative emails</strong> — a few <span class="pill pos">New Position</span> and a few <span class="pill jd">Job Description</span> from each of the last few years.</li>
+      <li>Select them, drag them into a desktop folder (Outlook saves them as <code>.msg</code>), then drop the whole folder's contents anywhere on the archive page in one go.</li>
+      <li>Skim the results: correct any kind the guesser got wrong, and set <strong>Department</strong> on each (departments power a filter, so consistent names pay off — decide now whether it's "Research" or "Research Dept").</li>
+    </ol>
+    <div class="why"><strong>Why before sharing:</strong> the team's first impression will be a search that finds things — not an empty page. Real records also make the coverage chart show where backfill is still needed.</div>
+  </section>
+
+  <section class="stage" data-stage="s3">
+    <div class="stage-head">
+      <span class="stage-check"><input type="checkbox" aria-label="Mark stage 3 done"></span>
+      <div class="t"><h3>3 · Wire the ongoing Outlook feed</h3><div class="meta">≈ 1 hour, one-time · needs the GitHub token</div></div>
+    </div>
+    <p>Same trust model as the board: Claude never touches the mailbox. A Power Automate flow you control <em>pushes</em> categorized emails into the repo, and a scheduled sweep (weekdays, three times a day) files them into the archive.</p>
+    <ol>
+      <li>Reuse the fine-grained GitHub token from the board flow (repo-scoped, <em>Contents: Read and write</em>) — or mint a fresh one the same way.</li>
+      <li>Clone the board's flow and make the four changes for the archive, or build from the full recipe in <a href="https://github.com/marisagibaud-sys/Claude/blob/claude/email-archive-positions-v00ubh/archive-inbox/README.md" target="_blank" rel="noopener">archive-inbox/README.md</a>:
+        <ul>
+          <li><strong>Filter</strong> on the two archive categories:<br><code>categories/any(c:c eq 'New Position') or categories/any(c:c eq 'Job Description Review/Update')</code> — and exclude an <code>'Archived'</code> marker category instead of <code>'Logged'</code>.</li>
+          <li><strong>Select the body</strong> — add <code>body</code> to the <code>$select</code> list, and add <code>"body"</code> / <code>"bodyType"</code> to the Compose payload. This is what preserves the actual job description text.</li>
+          <li><strong>Destination folder</strong> — <code>archive-inbox/</code>, not <code>inbox/</code>.</li>
+          <li><strong>Branch</strong> — <code>claude/email-archive-positions-v00ubh</code>.</li>
+        </ul>
+      </li>
+      <li>Test end-to-end: categorize one email in Outlook, run the flow manually, and confirm a new <code>.json</code> appears in <code>archive-inbox/</code> on GitHub. After the next weekday sweep, the record appears in the archive and the Guide drawer shows "Automation active".</li>
+    </ol>
+  </section>
+
+  <section class="stage" data-stage="s4">
+    <div class="stage-head">
+      <span class="stage-check"><input type="checkbox" aria-label="Mark stage 4 done"></span>
+      <div class="t"><h3>4 · Backfill the legacy history</h3><div class="meta">spread over days or weeks — it doesn't block Part 2</div></div>
+    </div>
+    <p>Two methods, safe to mix — duplicates are skipped automatically (by message id, and by identical subject + date), so overlapping runs are harmless.</p>
+    <ul>
+      <li><strong>Drag &amp; drop by era</strong> — search a year or a folder in Outlook, select all, drag to desktop, drop the batch on the page. Best when the history lives in your own mailbox and you want to review as you go.</li>
+      <li><strong>One-time flow runs</strong> — point the Stage&nbsp;3 flow's query at the past, one year at a time (the exact dated <code>$filter</code> is in the recipe README). Best for volume.</li>
+    </ul>
+    <p>Steer by the <strong>coverage chart</strong>: each bar is a year, and a missing bar is a gap still waiting on backfill. You don't need completeness before inviting the team — gaps are visible, so backfill can be shared work (Stage&nbsp;8).</p>
+  </section>
+
+  <div class="part"><h2>Part 2 — Bring the team in</h2><span class="who">week two</span><span class="rule"></span></div>
+
+  <section class="stage" data-stage="s5">
+    <div class="stage-head">
+      <span class="stage-check"><input type="checkbox" aria-label="Mark stage 5 done"></span>
+      <div class="t"><h3>5 · Decide roles before you share</h3><div class="meta">≈ 10 minutes of thinking</div></div>
+    </div>
+    <ul>
+      <li><strong>Everyone searches.</strong> That's the point — no training needed beyond "there's a search box".</li>
+      <li><strong>Start with a small editor group</strong> — you plus one or two teammates who own filing and backfill. Widen once the conventions (Stage&nbsp;7) have settled. People without edit access see a "View only" chip; nothing they try to change is saved.</li>
+      <li><strong>Name a backup owner</strong> for the automation — someone besides you who knows where the flow, the token, and the recipe README live.</li>
+    </ul>
+  </section>
+
+  <section class="stage" data-stage="s6">
+    <div class="stage-head">
+      <span class="stage-check"><input type="checkbox" aria-label="Mark stage 6 done"></span>
+      <div class="t"><h3>6 · Share the page</h3><div class="meta">≈ 2 minutes</div></div>
+    </div>
+    <ol>
+      <li>On the archive page, open the <strong>share menu</strong> and grant access to your teammates — the artifact stays private until you do this.</li>
+      <li>Have one teammate open the link, run a search, and (if they're an editor) file one record — confirm their save lands and everyone sees it.</li>
+      <li>Tell editors to save their <strong>initials</strong> via the Guide drawer on first visit.</li>
+    </ol>
+  </section>
+
+  <section class="stage" data-stage="s7">
+    <div class="stage-head">
+      <span class="stage-check"><input type="checkbox" aria-label="Mark stage 7 done"></span>
+      <div class="t"><h3>7 · Announce it</h3><div class="meta">copy, tweak, send</div></div>
+    </div>
+    <div class="draft" id="draft">
+      <button class="copy" id="btn-copy" type="button">Copy</button>
+      <p><strong>New: the Position Archive</strong></p>
+      <p>We now have one shared, searchable home for the emails that created and described our positions — every New Position announcement and Job Description we can recover, with the full text preserved: [paste the archive link here]</p>
+      <p><strong>Finding things:</strong> type anything in the search box — a title, a grade ("GR 17"), a name, a phrase from a JD. Filter by kind, department, or year. Click a record to read the full original email; details like Grade, Salary Range, FLSA, and Reports To are pulled out as fields on each record.</p>
+      <p><strong>Adding things:</strong> if you come across an old position or JD email that isn't in the archive yet, drag the email out of Outlook to your desktop and drop the file onto the page — it takes about ten seconds and the details fill themselves in. Rule of thumb: if you had to dig it out of your mailbox, file it so the next person doesn't have to.</p>
+      <p>Mail categorized <em>New Position</em> or <em>Job Description Review/Update</em> in Outlook is archived automatically going forward — the archive is for the history that predates that.</p>
+      <p>Questions or a record that looks wrong? Tell [name] — everything is editable.</p>
+    </div>
+    <p>Send it wherever the team actually reads — and consider a 10-minute walkthrough at your next team meeting: one live search lands the idea faster than any writeup.</p>
+  </section>
+
+  <section class="stage" data-stage="s8">
+    <div class="stage-head">
+      <span class="stage-check"><input type="checkbox" aria-label="Mark stage 8 done"></span>
+      <div class="t"><h3>8 · Make it stick</h3><div class="meta">the first two weeks decide whether it becomes a habit</div></div>
+    </div>
+    <ul>
+      <li><strong>"Touch it, file it."</strong> The one rule worth repeating: anyone who digs a position email out of their mailbox files it before closing it.</li>
+      <li><strong>Divide the backfill.</strong> Assign owners by department or by era ("Sam takes 2019–2021"). The coverage chart is the progress tracker — gaps close visibly, which keeps it moving.</li>
+      <li><strong>A weekly 10-minute skim</strong> for the first few weeks: check new records for kind and department consistency (merge naming variants with Edit), and glance at the Guide drawer to confirm the automation is sweeping.</li>
+      <li><strong>Use notes for lineage</strong> — when a JD supersedes an older one, add a note like "superseded by the 2024 re-level" so searchers land on the right version.</li>
+    </ul>
+  </section>
+
+  <section class="stage" data-stage="s9">
+    <div class="stage-head">
+      <span class="stage-check"><input type="checkbox" aria-label="Mark stage 9 done"></span>
+      <div class="t"><h3>9 · Set the safety net</h3><div class="meta">≈ 5 minutes, then monthly</div></div>
+    </div>
+    <ul>
+      <li>Once real volume is in, click <strong>Export → JSON backup</strong> and keep the file somewhere durable. Repeat monthly — it's the complete archive including every body.</li>
+      <li>That JSON is also the <strong>migration file</strong>: when the new system is ready to hold this history, the archive hands it over in one structured export instead of another mailbox excavation.</li>
+      <li>The CSV export is for analysis — one row per record with all the component fields, ready for Excel.</li>
+    </ul>
+  </section>
+
+  <div class="part"><h2>If something looks off</h2><span class="rule"></span></div>
+  <div class="ts">
+    <div class="row"><div class="c">"View only" chip</div><div class="c">That person wasn't given edit access when the page was shared — re-share with edit rights, or they're a searcher by design.</div></div>
+    <div class="row"><div class="c">"Not connected — changes stay on this screen only"</div><div class="c">The page was opened outside claude.ai (e.g. a saved copy). Open it from the shared artifact link instead.</div></div>
+    <div class="row"><div class="c">Flow's GitHub step returns 404</div><div class="c">Almost always the branch or token: the PUT must target branch <code>claude/email-archive-positions-v00ubh</code>, and the token needs <em>Contents: Read and write</em> on this repo.</div></div>
+    <div class="row"><div class="c">Pushed files but no records yet</div><div class="c">The sweep runs on weekdays three times a day. Files wait in <code>archive-inbox/</code> until then; the Guide drawer shows the last sweep time once it has run.</div></div>
+    <div class="row"><div class="c">Components didn't extract</div><div class="c">The extractor reads <code>Label: value</code> lines (Title, Grade, Salary Range, …) from the body. If an email formats them differently, open the record, click Edit, and fill the fields — they're ordinary text fields.</div></div>
+    <div class="row"><div class="c">Same email showed up twice</div><div class="c">Shouldn't happen via drag-drop or the flow (id and subject+date de-dup). If two genuinely different emails describe the same role, keep both — that's lineage, not duplication.</div></div>
+  </div>
+
+  <footer>Companion to the Position Archive · flow recipe and file format live in <code>archive-inbox/README.md</code> on the repo · the board's own setup guide covers the original Outlook token steps in full detail.</footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const KEY = "pa-rollout-done";
+  const stages = Array.from(document.querySelectorAll(".stage"));
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+  const save = d => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch {} };
+  let done = load();
+
+  function paint() {
+    let n = 0;
+    for (const s of stages) {
+      const on = !!done[s.dataset.stage];
+      s.classList.toggle("done", on);
+      s.querySelector("input[type=checkbox]").checked = on;
+      if (on) n++;
+    }
+    document.getElementById("p-fill").style.width = (n / stages.length * 100) + "%";
+    document.getElementById("p-n").textContent = n + " of " + stages.length;
+  }
+
+  stages.forEach(s => {
+    s.querySelector("input[type=checkbox]").addEventListener("change", e => {
+      done[s.dataset.stage] = e.target.checked;
+      if (!e.target.checked) delete done[s.dataset.stage];
+      save(done); paint();
+    });
+  });
+
+  const btn = document.getElementById("btn-copy");
+  btn.addEventListener("click", async () => {
+    const clone = document.getElementById("draft").cloneNode(true);
+    clone.querySelector(".copy").remove();
+    const text = Array.from(clone.querySelectorAll("p")).map(p => p.textContent.trim()).join("\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = "Copied";
+    } catch {
+      btn.textContent = "Select & copy manually";
+    }
+    setTimeout(() => { btn.textContent = "Copy"; }, 2200);
+  });
+
+  paint();
+})();
+</script>
