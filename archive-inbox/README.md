@@ -124,6 +124,20 @@ not the filter:
 `$filter` must match the Outlook category exactly, including capitalization
 and the `/` in `Job Description Review/Update`.
 
+**GitHub PUT fails with "is at \<sha\> but expected \<sha\>"** — a branch
+race: each file PUT is a git commit, and *Apply to each* runs iterations in
+parallel by default, so simultaneous PUTs to the same branch conflict. Two
+settings fix it for good (set them in both flows):
+
+- *Apply to each* → Settings → **Concurrency Control ON, Degree of
+  Parallelism = 1** — commits then happen one at a time.
+- HTTP (GitHub PUT) action → Settings → **Retry Policy: Fixed Interval,
+  4 retries, PT15S** — absorbs any conflict with other pushes to the branch.
+
+Nothing is lost when this error hits: the `Archived` category is only
+applied after a successful PUT, so the affected email is simply picked up
+again on the next run (and the archive de-duplicates by message id anyway).
+
 ## Backfilling the legacy history
 
 Two ways, safe to combine:
