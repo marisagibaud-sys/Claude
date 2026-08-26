@@ -1,4 +1,14 @@
-# Triage Volume Board
+# Triage Volume Board & Position Archive
+
+Two sibling artifact apps share this repo:
+
+- **Triage Volume Board** (`index.html`) — the drag-and-drop volume tracker
+  described below.
+- **Position Archive** (`archive.html`) — the searchable institutional record
+  of historical **New Position** and **Job Description** emails. See
+  [the Position Archive](#position-archive) section.
+
+---
 
 A shared drag-and-drop tracker for categorizing email and Microsoft Teams volume.
 The board is published as a Claude artifact — one page the team opens, drops
@@ -161,6 +171,45 @@ version — compare-and-set, so concurrent editors can't clobber each other. The
 scheduled sweep does the same merge server-side. Escaping note: `</` inside the
 state JSON is written as `<\/` (a legal JSON escape) so no subject line can break
 out of the script block.
+
+## Position Archive
+
+`archive.html` is the second app in this repo: a shared, searchable archive of
+historical emails that announced **new positions** or carried **job
+descriptions / JD updates**. The team's fully functioning system is coming,
+but years of this history live only in individual mailboxes — the archive is
+the durable, shared record of that legacy information, and the JSON export is
+the migration path into the future system.
+
+Where the board counts conversations, the archive **preserves them**:
+
+- **Full email text** — the body is captured and searchable, not just the
+  subject line.
+- **Components extracted automatically** — these emails lead with a structured
+  block (Title, PL/CC/JC, Grade, Salary Range, FLSA, PPT Level, License,
+  FTE Leader, Direct Supervision, FTE Hours, Reports to, JD Status). The
+  archive reads those `Label: value` lines out of the body and shows them as
+  fields on each record; they're searchable and exported in the CSV.
+- **Search & filters** — full-text search across titles, departments, senders,
+  bodies, and components; filter by kind, department, and year; records are
+  grouped by year received.
+- **Coverage chart** — records per year, split by kind, so gaps still waiting
+  on backfill are visible at a glance (click a bar to filter that year).
+- **Backfill-friendly intake** — drop batches of `.eml`/`.msg` files saved
+  from Outlook anywhere on the page, paste an email, or add records manually.
+  Duplicates (by message id, or identical subject + date) are skipped, so
+  overlapping backfills are safe.
+- **Export** — a CSV index (one row per record, components included) or a
+  complete JSON backup with every body.
+
+It's published as a Claude artifact with the same shared-saving mechanism as
+the board (state lives in the page's `<script id="pa-state">` block;
+compare-and-set publishes). Same trust model too: **no connectors, no mailbox
+access** — automated items are pushed into `archive-inbox/` by a Power
+Automate flow the mailbox owner controls, and a scheduled Claude task sweeps
+them into the artifact. The flow recipe, the push-file format, and both
+backfill methods (bulk drag-and-drop and a one-time dated flow run) are
+documented in [`archive-inbox/README.md`](archive-inbox/README.md).
 
 ## Parsers included
 

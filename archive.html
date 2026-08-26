@@ -1,0 +1,1407 @@
+<title>Position Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style id="pa-css">
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --line: #e1e0d9;
+    --baseline: #c3c2b7;
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --hot: rgba(42, 120, 214, 0.08);
+    --danger: #d03b3b;
+    --pos: #008300;
+    --pos-soft: rgba(0, 131, 0, 0.10);
+    --jd: #a05e17;
+    --jd-soft: rgba(176, 111, 40, 0.12);
+    --shadow: 0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --line: #2c2c2a;
+      --baseline: #383835;
+      --accent: #3987e5;
+      --accent-ink: #ffffff;
+      --hot: rgba(57, 135, 229, 0.14);
+      --danger: #e66767;
+      --pos: #2fae53;
+      --pos-soft: rgba(47, 174, 83, 0.14);
+      --jd: #cd9250;
+      --jd-soft: rgba(205, 146, 80, 0.14);
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --line: #2c2c2a;
+    --baseline: #383835;
+    --accent: #3987e5;
+    --accent-ink: #ffffff;
+    --hot: rgba(57, 135, 229, 0.14);
+    --danger: #e66767;
+    --pos: #2fae53;
+    --pos-soft: rgba(47, 174, 83, 0.14);
+    --jd: #cd9250;
+    --jd-soft: rgba(205, 146, 80, 0.14);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
+  input, select, textarea {
+    font: inherit; color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 10px;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ---------- top bar ---------- */
+  .top { display: flex; align-items: center; gap: 14px; padding: 20px 0 14px; flex-wrap: wrap; }
+  .wordmark {
+    font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+    font-weight: 750; font-size: 21px; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 10px; white-space: nowrap;
+  }
+  .wordmark .glyph {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--accent); color: var(--accent-ink);
+    display: grid; place-items: center;
+  }
+  .top .spacer { flex: 1; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--line); background: var(--surface);
+    border-radius: 999px; padding: 5px 12px;
+    color: var(--ink-2); font-size: 13px; font-weight: 500; white-space: nowrap;
+  }
+  .chip.ro { color: var(--danger); border-color: var(--danger); }
+  .chip[hidden] { display: none; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    border-radius: 8px; padding: 8px 14px;
+    font-weight: 600; font-size: 13.5px;
+    border: 1px solid var(--line); background: var(--surface); white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--baseline); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn.small { padding: 5px 10px; font-size: 12.5px; border-radius: 7px; }
+  .btn.danger { color: var(--danger); }
+
+  /* ---------- search ---------- */
+  .searchbar { position: relative; margin: 4px 0 14px; }
+  .searchbar svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .searchbar input {
+    width: 100%; padding: 11px 40px 11px 40px; border-radius: 11px;
+    font-size: 15px; box-shadow: var(--shadow);
+  }
+  .searchbar .clear {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); padding: 4px 8px; border-radius: 7px;
+  }
+  .searchbar .clear:hover { color: var(--ink); background: var(--hot); }
+
+  /* ---------- stat tiles ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 0 0 14px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px 12px; box-shadow: var(--shadow);
+  }
+  .tile .label { font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+  .tile .value {
+    font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+    font-weight: 700; font-size: 30px; line-height: 1.15; margin-top: 2px;
+  }
+  .tile .sub { font-size: 12.5px; color: var(--ink-2); margin-top: 1px; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ---------- coverage panel ---------- */
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--shadow); padding: 16px 18px; margin-bottom: 18px;
+  }
+  .panel h2 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+  .panel .hint { color: var(--muted); font-size: 12.5px; margin: 0 0 8px; }
+  #chart { width: 100%; }
+  #chart svg { display: block; width: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
+  .legend .lg { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-2); }
+  #tip {
+    position: fixed; z-index: 60; pointer-events: none; display: none;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: var(--shadow); padding: 7px 10px; font-size: 12.5px; max-width: 260px;
+  }
+  #tip .t1 { font-weight: 600; }
+  #tip .t2 { color: var(--ink-2); }
+
+  /* ---------- filter rail ---------- */
+  .rail { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+  .kindset { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); padding: 3px; gap: 2px; }
+  .kindset button {
+    border-radius: 999px; padding: 4px 12px; font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .kindset button[aria-pressed="true"] { background: var(--ink); color: var(--page); }
+  .kindset .kdot { width: 8px; height: 8px; border-radius: 50%; }
+  .rail select { padding: 5px 8px; font-size: 13px; border-radius: 8px; max-width: 190px; }
+  .rail .result-n { color: var(--muted); font-size: 12.5px; margin-left: auto; }
+
+  /* ---------- ledger ---------- */
+  .yearhead {
+    display: flex; align-items: baseline; gap: 10px; margin: 22px 0 8px;
+  }
+  .yearhead h2 {
+    font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+    font-size: 19px; font-weight: 700; margin: 0;
+  }
+  .yearhead .n { color: var(--muted); font-size: 12.5px; }
+  .yearhead .rule { flex: 1; border-top: 1px solid var(--line); transform: translateY(-3px); }
+  .recs { display: flex; flex-direction: column; gap: 8px; }
+  .rec {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 11px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .rec.open { border-color: var(--baseline); }
+  .rec-head {
+    display: grid; width: 100%; text-align: left;
+    grid-template-columns: auto minmax(0, 1.5fr) minmax(0, 1fr) auto auto;
+    gap: 12px; align-items: center; padding: 11px 14px;
+  }
+  .rec-head:hover { background: var(--hot); }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 999px; padding: 2px 10px; font-size: 11.5px; font-weight: 600; white-space: nowrap;
+  }
+  .pill.pos { background: var(--pos-soft); color: var(--pos); }
+  .pill.jd { background: var(--jd-soft); color: var(--jd); }
+  .r-main { min-width: 0; }
+  .r-title { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .r-dept { color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .r-from { color: var(--ink-2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .r-date { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .r-chev { color: var(--muted); transition: transform .15s; }
+  .rec.open .r-chev { transform: rotate(180deg); }
+  @media (prefers-reduced-motion: reduce) { .r-chev { transition: none; } }
+  .rec-detail { border-top: 1px solid var(--line); padding: 13px 14px 14px; }
+  .rec-detail .d-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12.5px; color: var(--ink-2); margin-bottom: 10px; }
+  .rec-detail .d-meta strong { color: var(--ink); font-weight: 600; }
+  .spec-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px 16px; margin: 0 0 12px;
+    background: var(--page); border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px;
+  }
+  .spec-grid .sp-l { font-size: 10.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .spec-grid .sp-v { font-size: 13px; overflow-wrap: anywhere; }
+  .body-pre {
+    font-family: inherit; font-size: 13px; color: var(--ink);
+    background: var(--page); border: 1px solid var(--line); border-radius: 9px;
+    padding: 12px 14px; margin: 0;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+    max-height: 420px; overflow-y: auto; max-width: 72ch;
+  }
+  .body-empty { color: var(--muted); font-size: 12.5px; font-style: italic; }
+  .d-note { font-size: 12.5px; color: var(--ink-2); margin-top: 9px; }
+  .d-acts { display: flex; gap: 8px; margin-top: 11px; }
+  .empty-state {
+    border: 1.5px dashed var(--line); border-radius: 12px;
+    color: var(--muted); text-align: center; padding: 44px 20px; margin-top: 20px; font-size: 13.5px;
+  }
+  .empty-state strong { color: var(--ink-2); }
+
+  /* ---------- footer hint ---------- */
+  .foot-hint {
+    margin-top: 26px; color: var(--muted); font-size: 12.5px;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  kbd {
+    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px;
+    padding: 0 5px; font-family: inherit; font-size: 11.5px; background: var(--surface);
+  }
+
+  /* ---------- drop overlay ---------- */
+  #dropveil {
+    position: fixed; inset: 0; z-index: 40; display: none;
+    background: color-mix(in srgb, var(--page) 55%, transparent);
+    backdrop-filter: blur(1px); pointer-events: none;
+  }
+  #dropveil .msg {
+    position: absolute; left: 50%; top: 24px; transform: translateX(-50%);
+    background: var(--accent); color: var(--accent-ink);
+    border-radius: 999px; padding: 9px 18px; font-weight: 600; box-shadow: var(--shadow);
+  }
+  body.dragging-in #dropveil { display: block; }
+
+  /* ---------- drawer ---------- */
+  #drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 94vw); z-index: 50;
+    background: var(--surface); border-left: 1px solid var(--line);
+    box-shadow: -8px 0 32px rgba(0,0,0,.12);
+    transform: translateX(102%); transition: transform .18s ease;
+    display: flex; flex-direction: column;
+  }
+  @media (prefers-reduced-motion: reduce) { #drawer { transition: none; } }
+  #drawer.open { transform: none; }
+  #drawer .d-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+  #drawer .d-head h2 { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 16px; font-weight: 700; margin: 0; flex: 1; }
+  #drawer .d-body { padding: 16px 18px; overflow-y: auto; flex: 1; }
+  #drawer h3 { font-size: 13px; font-weight: 600; margin: 18px 0 6px; }
+  #drawer h3:first-child { margin-top: 0; }
+  #drawer p, #drawer li { font-size: 13px; color: var(--ink-2); }
+  #drawer ol { padding-left: 18px; margin: 6px 0; }
+  #drawer li { margin: 5px 0; }
+  #drawer code, #drawer pre {
+    font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+    font-size: 11.5px;
+  }
+  #drawer pre {
+    background: var(--page); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px; overflow-x: auto; margin: 6px 0;
+  }
+  #drawer code { background: var(--page); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+  .status-line {
+    display: flex; align-items: flex-start; gap: 9px;
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 8px 0;
+    font-size: 13px;
+  }
+  .status-line .sdot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex: none; }
+  .sdot.ok { background: #0ca30c; }
+  .sdot.idle { background: var(--muted); }
+  .field-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+  .field-row input { flex: 1; min-width: 0; }
+
+  /* ---------- modal ---------- */
+  #veil {
+    position: fixed; inset: 0; z-index: 70; display: none;
+    background: rgba(0,0,0,.35); align-items: flex-start; justify-content: center;
+    padding: 6vh 16px 16px;
+  }
+  #veil.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); width: 560px; max-width: 100%; max-height: 88vh; overflow-y: auto;
+    padding: 18px 20px;
+  }
+  .modal h2 { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 17px; font-weight: 700; margin: 0 0 12px; }
+  .modal label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin: 11px 0 4px; }
+  .modal input, .modal select, .modal textarea { width: 100%; }
+  .modal textarea { resize: vertical; min-height: 120px; }
+  .modal .m-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .modal .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .modal .x-opt {
+    display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left;
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 8px 0;
+  }
+  .modal .x-opt:hover { border-color: var(--accent); background: var(--hot); }
+  .modal .x-opt .t { font-weight: 600; font-size: 13.5px; }
+  .modal .x-opt .s { color: var(--ink-2); font-size: 12.5px; }
+
+  /* ---------- toast ---------- */
+  #toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+    z-index: 80; display: none; align-items: center; gap: 12px;
+    background: var(--ink); color: var(--page);
+    border-radius: 10px; padding: 10px 16px; font-size: 13.5px; box-shadow: var(--shadow);
+    max-width: min(90vw, 560px);
+  }
+  #toast.show { display: flex; }
+  #toast button { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  @media (max-width: 700px) {
+    .wrap { padding: 0 12px 60px; }
+    .rec-head { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .r-from { display: none; }
+    .r-date { display: none; }
+  }
+</style>
+
+<script id="pa-state" type="application/json">
+{
+  "v": 1,
+  "recs": [],
+  "meta": { "lastSweep": null, "swept": 0, "done": [] }
+}
+</script>
+
+<script id="pa-app">
+(() => {
+"use strict";
+
+/* ---------------- shell markup (built by JS so the document can be
+   regenerated deterministically from state for artifact publishes) ---------------- */
+
+const SHELL = [
+'<div class="wrap">',
+'  <header class="top">',
+'    <div class="wordmark">',
+'      <span class="glyph" aria-hidden="true">',
+'        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 4.5h12M2.5 4.5v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-7M1.5 2.5h12v2h-12v-2ZM5.7 7h3.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+'      </span>',
+'      Position Archive',
+'    </div>',
+'    <div class="spacer"></div>',
+'    <span class="chip" id="save-chip" hidden></span>',
+'    <span class="chip ro" id="ro-chip" hidden>View only</span>',
+'    <button class="btn" id="btn-drawer">Guide</button>',
+'    <button class="btn" id="btn-export">Export</button>',
+'    <button class="btn primary" id="btn-add">+ Add record</button>',
+'  </header>',
+'  <div class="searchbar">',
+'    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.5"/><path d="m10.6 10.6 3.2 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+'    <input id="q" type="search" placeholder="Search titles, departments, senders, and full email text…" aria-label="Search the archive" autocomplete="off">',
+'    <button class="clear" id="q-clear" hidden aria-label="Clear search">✕</button>',
+'  </div>',
+'  <section class="tiles" id="tiles" aria-label="Archive summary"></section>',
+'  <section class="panel">',
+'    <h2>Coverage by year</h2>',
+'    <p class="hint">Archived records by year received — empty years are gaps still waiting on backfill.</p>',
+'    <div id="chart"></div>',
+'    <div class="legend" id="legend"></div>',
+'  </section>',
+'  <div class="rail" id="rail" role="group" aria-label="Filters"></div>',
+'  <section id="ledger" aria-label="Archived records" aria-live="polite"></section>',
+'  <p class="foot-hint">',
+'    <span>Drop <strong>.eml</strong> / <strong>.msg</strong> files anywhere — subject, sender, date, and the full body are captured</span>·',
+'    <span><kbd>Ctrl</kbd>+<kbd>V</kbd> to paste a copied email</span>·',
+'    <span>Outlook-categorized mail is archived automatically</span>',
+'  </p>',
+'</div>',
+'<div id="dropveil" aria-hidden="true"><div class="msg">Release to add to the archive</div></div>',
+'<div id="tip" role="tooltip"></div>',
+'<aside id="drawer" aria-label="Guide and automation">',
+'  <div class="d-head">',
+'    <h2>Guide &amp; automation</h2>',
+'    <button class="btn small" id="btn-drawer-close">Close</button>',
+'  </div>',
+'  <div class="d-body" id="drawer-body"></div>',
+'</aside>',
+'<div id="veil"><div class="modal" role="dialog" aria-modal="true" id="modal"></div></div>',
+'<div id="toast"><span id="toast-msg"></span><button id="toast-act" hidden></button></div>'
+].join("\n");
+
+document.body.insertAdjacentHTML("afterbegin", SHELL);
+
+/* ---------------- state ---------------- */
+
+let S = migrate(JSON.parse(document.getElementById("pa-state").textContent));
+let RO = false;
+let savingUnavailable = false;
+let art = null, dl = null;
+const openIds = new Set();                       // expanded records (view-local)
+const Q = { q: "", kind: "all", dept: "", year: "", sort: "new" };   // filters (view-local)
+
+const $ = (sel, el) => (el || document).querySelector(sel);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const ssGet = k => { try { return sessionStorage.getItem(k); } catch { return null; } };
+const ssSet = (k, v) => { try { sessionStorage.setItem(k, v); } catch {} };
+const ssDel = k => { try { sessionStorage.removeItem(k); } catch {} };
+
+const KINDS = { pos: "New Position", jd: "Job Description" };
+const kindName = k => KINDS[k] || KINDS.pos;
+
+function migrate(raw) {
+  if (!raw || typeof raw !== "object" || !Array.isArray(raw.recs)) raw = { recs: [] };
+  raw.v = 1;
+  raw.meta = Object.assign({ lastSweep: null, swept: 0, done: [] }, raw.meta || {});
+  raw.recs.forEach(r => { if (r.kind !== "jd") r.kind = "pos"; if (!r.spec || typeof r.spec !== "object") r.spec = {}; });
+  return raw;
+}
+
+const recDate = r => { const d = new Date(r.rcv || r.added); return isNaN(d) ? new Date(r.added) : d; };
+const recYear = r => recDate(r).getFullYear();
+const fmtFull = d => d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+const fmtShort = d => d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+
+/* ---------------- self-publish (the document is a function of state) ----------------
+   Same pattern as the Triage Volume Board: the page never serializes its live DOM.
+   It rebuilds the complete canonical document from static head constants, the
+   style/script elements' parse-time text, and current state, then publishes it. */
+
+const HEAD_STATIC =
+  '<meta charset="utf-8">' +
+  '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+  '<title>Position Archive</title>' +
+  '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Instrument+Sans:wght@400;500;600&amp;display=swap">';
+
+function assemble(stateJson) {
+  const css = document.getElementById("pa-css").textContent;
+  const app = document.getElementById("pa-app").textContent;
+  const safe = stateJson.replace(/<\//g, "<\\/"); // "\/" is a legal JSON escape; keeps "<\/script" out of the markup
+  return "<!doctype html>\n<html><head>" + HEAD_STATIC +
+    '<style id="pa-css">' + css + "</style></head><body>" +
+    '<script id="pa-state" type="application/json">' + safe + "<\/script>" +
+    '<script id="pa-app">' + app + "<\/script></body></html>";
+}
+
+let saveTimer = null, saveInFlight = false, saveDirty = false;
+
+function setRO() {
+  if (RO) return;
+  RO = true;
+  $("#ro-chip").hidden = false;
+  render();
+}
+
+function commit(delay) { render(); scheduleSave(delay); }
+
+function scheduleSave(delay) {
+  if (RO || savingUnavailable) return;
+  saveDirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(doSave, delay || 1200);
+}
+
+async function doSave(retried) {
+  if (saveInFlight) { saveDirty = true; return; }
+  saveDirty = false; saveInFlight = true;
+  chip("Saving…");
+  try {
+    if (!art) art = await window.claude?.use?.("artifact");
+    if (!art) { savingUnavailable = true; chip("Not connected — changes stay on this screen only", 5000); return; }
+    stashUi(); ssSet("pa-saved", "1");
+    await art.publish(assemble(JSON.stringify(S)));
+    // on success this view reloads to the new version
+  } catch (e) {
+    ssDel("pa-saved");
+    const code = e && e.code;
+    if (code === "conflict") { /* view is reloading to the winning version */ }
+    else if (code === "not_writer" || code === "not_granted" || code === "consent_required") { setRO(); chip("View only — changes not saved", 4000); }
+    else if (code === "capability_disabled" || code === "capability_removed") { savingUnavailable = true; chip("Shared saving unavailable here", 4000); }
+    else if (code === "rate_limited") { saveDirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 6000); }
+    else if (code === "too_large") { chip("Archive too large to save — export a JSON backup, then trim the oldest bodies", 7000); }
+    else if (!retried) { setTimeout(() => doSave(true), 900 + Math.random() * 900); }
+    else chip("Couldn't save — will retry on your next change", 4000);
+  } finally {
+    saveInFlight = false;
+    if (saveDirty) scheduleSave();
+  }
+}
+
+function stashUi() {
+  ssSet("pa-ui", JSON.stringify({
+    scroll: scrollY,
+    drawer: $("#drawer").classList.contains("open"),
+    open: [...openIds].slice(0, 40),
+    q: Q
+  }));
+}
+
+function chip(msg, ttl) {
+  const el = $("#save-chip");
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(chip._t);
+  if (ttl) chip._t = setTimeout(() => { el.hidden = true; }, ttl);
+}
+
+/* ---------------- toast + undo ---------------- */
+
+let toastTimer = null;
+function toast(msg, actLabel, actFn) {
+  $("#toast-msg").textContent = msg;
+  const b = $("#toast-act");
+  b.hidden = !actLabel;
+  if (actLabel) { b.textContent = actLabel; b.onclick = () => { hideToast(); actFn(); }; }
+  $("#toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 6000);
+}
+function hideToast() { $("#toast").classList.remove("show"); }
+
+/* ---------------- records ---------------- */
+
+const normSub = s => String(s || "").replace(/^\s*(?:(?:re|fw|fwd|aw|sv|vs|antw|wg)\s*:\s*)+/i, "").replace(/\s+/g, " ").trim().toLowerCase();
+
+function isDup(fields) {
+  const mid = fields.mid, imid = fields.imid;
+  if (mid && S.recs.some(r => r.mid === mid)) return true;
+  if (imid && S.recs.some(r => r.imid === imid)) return true;
+  const ns = normSub(fields.sub);
+  if (ns.length >= 10 && fields.rcv) {
+    const day = fields.rcv.slice(0, 10);
+    if (S.recs.some(r => normSub(r.sub) === ns && (r.rcv || "").slice(0, 10) === day)) return true;
+  }
+  return false;
+}
+
+function cleanBody(text) {
+  let t = String(text || "").replace(/\r\n?/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  if (t.length > 20000) t = t.slice(0, 20000) + "\n\n[… truncated at 20,000 characters]";
+  return t;
+}
+
+function kindGuess(sub, body) {
+  const s = String(sub || "");
+  if (/job\s*desc|position\s*desc|\bJD\b|\bPD\b|description\s*(review|update)/i.test(s)) return "jd";
+  if (/new\s*(position|role|req\b|hire|headcount)|requisition|job\s*posting|position\s*(request|approval)/i.test(s)) return "pos";
+  if (/job\s*description|position\s*description/i.test(String(body || "").slice(0, 600))) return "jd";
+  return "pos";
+}
+
+/* The structured components that lead most position/JD emails, e.g.
+   Title / PL/CC/JC / Grade / Salary Range / FLSA / PPT Level / License /
+   FTE Leader / Direct Supervision / FTE Hours / Reports to / JD Status.
+   Each entry: [key, display label, accepted source labels]. */
+const SPEC_DEFS = [
+  ["jc",        "PL/CC/JC",           ["PL/CC/JC", "PL / CC / JC", "PL CC JC"]],
+  ["grade",     "Grade",              ["Grade"]],
+  ["salary",    "Salary Range",       ["Salary Range", "Salary"]],
+  ["flsa",      "FLSA",               ["FLSA Status", "FLSA"]],
+  ["ppt",       "PPT Level",          ["PPT Level"]],
+  ["license",   "License",            ["License", "Licensure"]],
+  ["fteLeader", "FTE Leader",         ["FTE Leader"]],
+  ["sup",       "Direct Supervision", ["Direct Supervision", "Supervision"]],
+  ["fteHours",  "FTE Hours",          ["FTE Hours"]],
+  ["reports",   "Reports To",         ["Reports to", "Reports To"]],
+  ["jdStatus",  "JD Status",          ["Job Description Status", "JD Status"]]
+];
+
+function specLine(text, label) {
+  const m = String(text || "").match(new RegExp("^[ \\t]*" + escRe(label) + "[ \\t]*:[ \\t]*(.+)$", "im"));
+  return m ? m[1].replace(/\s+/g, " ").trim().slice(0, 160) : "";
+}
+
+function extractSpecs(body) {
+  const spec = {};
+  for (const [key, , labels] of SPEC_DEFS) {
+    for (const l of labels) {
+      const v = specLine(body, l);
+      if (v) { spec[key] = v; break; }
+    }
+  }
+  return spec;
+}
+const specTitle = body => specLine(body, "Title");
+
+function titleFromSub(sub) {
+  let t = normSub(sub);
+  t = String(sub || "").replace(/^\s*(?:(?:re|fw|fwd|aw|sv|vs|antw|wg)\s*:\s*)+/i, "").trim();
+  t = t.replace(/^(?:new\s+position|job\s+description(?:\s+(?:review|update))?|position\s+description|jd|updated?\s+jd)\s*[:–—-]\s*/i, "").trim();
+  return t || String(sub || "").trim();
+}
+
+function addRec(fields, via) {
+  if (isDup(fields)) return { dup: true };
+  const body = cleanBody(fields.body);
+  const spec = fields.spec && Object.keys(fields.spec).length ? fields.spec : extractSpecs(body);
+  const r = {
+    id: uid(),
+    kind: fields.kind === "jd" ? "jd" : "pos",
+    title: (fields.title || specTitle(body) || titleFromSub(fields.sub) || "(untitled)").slice(0, 200),
+    spec,
+    dept: (fields.dept || "").slice(0, 100),
+    sub: (fields.sub || "(no subject)").slice(0, 300),
+    from: (fields.from || "").slice(0, 200),
+    rcv: fields.rcv || null,
+    body,
+    note: (fields.note || "").slice(0, 500),
+    mid: fields.mid || null,
+    imid: fields.imid || null,
+    via: via,
+    by: lsGet("pa-name") || "",
+    added: new Date().toISOString()
+  };
+  S.recs.unshift(r);
+  return { r };
+}
+
+/* ---------------- parsers ---------------- */
+
+function decodeRfc2047(s) {
+  return String(s || "").replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (_, cs, enc, data) => {
+    try {
+      let bytes;
+      if (/b/i.test(enc)) bytes = Uint8Array.from(atob(data), c => c.charCodeAt(0));
+      else {
+        const qp = data.replace(/_/g, " ").replace(/=([0-9A-F]{2})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
+        bytes = Uint8Array.from(qp, c => c.charCodeAt(0));
+      }
+      return new TextDecoder(cs.trim()).decode(bytes);
+    } catch { return data; }
+  }).replace(/\?=\s+=\?/g, "?==?");
+}
+
+function parseHeaderBlock(raw) {
+  const h = {};
+  const unfolded = String(raw || "").replace(/\r?\n[ \t]+/g, " ");
+  for (const line of unfolded.split(/\r?\n/)) {
+    const mm = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+    if (mm) h[mm[1].toLowerCase()] = mm[2];
+  }
+  return h;
+}
+
+function decodePart(text, cte, charset) {
+  cte = String(cte || "").toLowerCase().trim();
+  try {
+    if (cte === "base64") {
+      const bytes = Uint8Array.from(atob(text.replace(/[^A-Za-z0-9+/=]/g, "")), c => c.charCodeAt(0));
+      return new TextDecoder(charset || "utf-8").decode(bytes);
+    }
+    if (cte === "quoted-printable") {
+      const qp = text.replace(/=\r?\n/g, "");
+      const bytes = [];
+      for (let i = 0; i < qp.length; i++) {
+        if (qp[i] === "=" && /^[0-9A-Fa-f]{2}$/.test(qp.slice(i + 1, i + 3))) { bytes.push(parseInt(qp.slice(i + 1, i + 3), 16)); i += 2; }
+        else bytes.push(qp.charCodeAt(i) & 0xff);
+      }
+      return new TextDecoder(charset || "utf-8").decode(new Uint8Array(bytes));
+    }
+  } catch {}
+  return text;
+}
+
+function stripHtml(html) {
+  let t = String(html || "")
+    .replace(/<(style|script|head)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|li|h[1-6]|table|blockquote)>/gi, "\n")
+    .replace(/<li\b[^>]*>/gi, "• ")
+    .replace(/<[^>]+>/g, " ");
+  t = t.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
+       .replace(/&quot;/gi, '"').replace(/&#0*39;|&apos;/gi, "'")
+       .replace(/&#(\d+);/g, (_, n) => { try { return String.fromCodePoint(+n); } catch { return " "; } })
+       .replace(/&#x([0-9a-f]+);/gi, (_, n) => { try { return String.fromCodePoint(parseInt(n, 16)); } catch { return " "; } });
+  return t.replace(/[ \t]{2,}/g, " ");
+}
+
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/* Recursively pull the best text out of a MIME body: prefers text/plain, falls back to stripped text/html. */
+function mimeText(h, body, depth) {
+  const ct = h["content-type"] || "text/plain";
+  const charset = (ct.match(/charset="?([\w.-]+)"?/i) || [])[1];
+  const bnd = (ct.match(/boundary="?([^";\r\n]+)"?/i) || [])[1];
+  if (bnd && (depth || 0) < 4) {
+    const parts = body.split(new RegExp("(?:^|\\r?\\n)--" + escRe(bnd) + "(?:--)?[ \\t]*(?:\\r?\\n|$)"));
+    let plain = null, html = null;
+    for (const p of parts.slice(1)) {
+      if (!p.trim()) continue;
+      const m = p.match(/\r?\n\r?\n/);
+      const ph = parseHeaderBlock(m ? p.slice(0, m.index) : "");
+      const pb = m ? p.slice(m.index + m[0].length) : "";
+      if (/attachment/i.test(ph["content-disposition"] || "")) continue;
+      const r = mimeText(ph, pb, (depth || 0) + 1);
+      if (r.plain != null && plain == null) plain = r.plain;
+      if (r.html != null && html == null) html = r.html;
+    }
+    return { plain, html };
+  }
+  if (/multipart\//i.test(ct)) return { plain: null, html: null }; // boundary missing — give up on this part
+  const dec = decodePart(body, h["content-transfer-encoding"], charset);
+  if (/text\/html/i.test(ct)) return { plain: null, html: dec };
+  if (/text\/plain|^text$|message\//i.test(ct) || !/\//.test(ct)) return { plain: dec, html: null };
+  return { plain: null, html: null };
+}
+
+function parseEml(text) {
+  const m = text.match(/\r?\n\r?\n/);
+  const h = parseHeaderBlock(m ? text.slice(0, m.index) : text.slice(0, 8000));
+  const rawBody = m ? text.slice(m.index + m[0].length) : "";
+  const t = mimeText(h, rawBody, 0);
+  const body = t.plain != null ? t.plain : (t.html != null ? stripHtml(t.html) : "");
+  const d = h.date ? new Date(h.date) : null;
+  return {
+    sub: decodeRfc2047(h.subject || ""),
+    from: decodeRfc2047(h.from || ""),
+    rcv: d && !isNaN(d) ? d.toISOString() : null,
+    mid: h["message-id"] || null,
+    body
+  };
+}
+
+/* Minimal MS-CFB (.msg) reader: subject, sender, received time, body. Throws on anything unexpected. */
+function parseMsg(buf) {
+  const dv = new DataView(buf);
+  if (dv.getUint32(0, true) !== 0xE011CFD0 || dv.getUint32(4, true) !== 0xE11AB1A1) throw new Error("not cfb");
+  const ssz = 1 << dv.getUint16(30, true);
+  const dirStart = dv.getUint32(48, true);
+  const miniCutoff = dv.getUint32(56, true);
+  const miniFatStart = dv.getUint32(60, true);
+  const numMiniFat = dv.getUint32(64, true);
+  let dif = dv.getUint32(68, true);
+  const numDif = dv.getUint32(72, true);
+  const secOff = s => (s + 1) * ssz;
+  const fatSects = [];
+  for (let i = 0; i < 109; i++) { const v = dv.getUint32(76 + 4 * i, true); if (v < 0xFFFFFFFA) fatSects.push(v); }
+  for (let n = 0; n < numDif && dif < 0xFFFFFFFA; n++) {
+    const off = secOff(dif);
+    for (let i = 0; i < ssz / 4 - 1; i++) { const v = dv.getUint32(off + 4 * i, true); if (v < 0xFFFFFFFA) fatSects.push(v); }
+    dif = dv.getUint32(off + ssz - 4, true);
+  }
+  const perSect = ssz / 4;
+  const fatAt = idx => dv.getUint32(secOff(fatSects[Math.floor(idx / perSect)]) + 4 * (idx % perSect), true);
+  const chain = (start, cap) => { const out = []; let s = start, g = 0; while (s < 0xFFFFFFFA && g++ < cap) { out.push(s); s = fatAt(s); } return out; };
+  const u8 = new Uint8Array(buf);
+  const readChain = (start, len) => {
+    const sects = chain(start, Math.ceil(len / ssz) + 4);
+    const out = new Uint8Array(sects.length * ssz);
+    sects.forEach((s, i) => out.set(u8.subarray(secOff(s), secOff(s) + ssz), i * ssz));
+    return out.subarray(0, len);
+  };
+  const entries = [];
+  for (const s of chain(dirStart, 4096)) {
+    for (let i = 0; i < ssz / 128; i++) {
+      const off = secOff(s) + i * 128;
+      const nlen = dv.getUint16(off + 64, true);
+      if (!nlen) continue;
+      let name = "";
+      for (let j = 0; j < nlen / 2 - 1; j++) name += String.fromCharCode(dv.getUint16(off + 2 * j, true));
+      entries.push({ name, type: dv.getUint8(off + 66), start: dv.getUint32(off + 116, true), size: dv.getUint32(off + 120, true) });
+    }
+  }
+  const root = entries.find(e => e.type === 5);
+  if (!root) throw new Error("no root");
+  const miniStream = readChain(root.start, root.size);
+  const miniFat = [];
+  for (const s of chain(miniFatStart, numMiniFat + 4))
+    for (let i = 0; i < perSect; i++) miniFat.push(dv.getUint32(secOff(s) + 4 * i, true));
+  const readMini = (start, len) => {
+    const out = new Uint8Array(len); let s = start, w = 0, g = 0;
+    while (s < 0xFFFFFFFA && w < len && g++ < 65536) {
+      const take = Math.min(64, len - w);
+      out.set(miniStream.subarray(s * 64, s * 64 + take), w);
+      w += take; s = miniFat[s];
+    }
+    return out;
+  };
+  const readStream = e => e.size < miniCutoff ? readMini(e.start, e.size) : readChain(e.start, e.size);
+  const utf16 = b => { let out = ""; for (let i = 0; i + 1 < b.length; i += 2) out += String.fromCharCode(b[i] | (b[i + 1] << 8)); return out.replace(/\0+$/, ""); };
+  const strProp = tag => {
+    let e = entries.find(x => x.type === 2 && x.name.toLowerCase() === "__substg1.0_" + tag + "001f");
+    if (e) return utf16(readStream(e));
+    e = entries.find(x => x.type === 2 && x.name.toLowerCase() === "__substg1.0_" + tag + "001e");
+    if (e) return new TextDecoder("windows-1252").decode(readStream(e));
+    return "";
+  };
+  let rcv = null;
+  const props = entries.find(x => x.type === 2 && x.name === "__properties_version1.0");
+  if (props) {
+    const pb = readStream(props); const pdv = new DataView(pb.buffer, pb.byteOffset, pb.byteLength);
+    for (let off = 32; off + 16 <= pb.length; off += 16) {
+      const tag = pdv.getUint32(off, true);
+      if (tag === 0x0E060040 || tag === 0x00390040) { // received / submit time (FILETIME)
+        const lo = pdv.getUint32(off + 8, true), hi = pdv.getUint32(off + 12, true);
+        const ms = (hi * 4294967296 + lo) / 10000 - 11644473600000;
+        const d = new Date(ms);
+        if (d.getFullYear() > 1995 && d.getFullYear() < 2100) { rcv = d.toISOString(); if (tag === 0x0E060040) break; }
+      }
+    }
+  }
+  const name = strProp("0c1a"), mail = strProp("5d01") || strProp("0c1f");
+  return {
+    sub: strProp("0037") || strProp("0e1d"),
+    from: name && mail && !/@/.test(name) ? `${name} <${mail}>` : (name || mail),
+    rcv, mid: strProp("1035") || null,
+    body: strProp("1000") || ""
+  };
+}
+
+function parseLoose(text) {
+  const t = String(text || "");
+  const grab = re => { const m = t.match(re); return m ? m[1].trim() : ""; };
+  const sub = grab(/^subject:[ \t]*(.+)$/im);
+  const from = grab(/^from:[ \t]*(.+)$/im);
+  const sent = grab(/^(?:sent|date|received):[ \t]*(.+)$/im);
+  const d = sent ? new Date(sent) : null;
+  const firstLine = t.split(/\r?\n/).map(l => l.trim()).find(l => l) || "";
+  // body = everything after the last recognized header line, else the whole text
+  let body = t;
+  const hm = t.match(/^(?:[ \t]*(?:from|to|cc|subject|sent|date|received|importance):[ \t]*.*\r?\n)+\r?\n?/im);
+  if (hm && hm.index === 0) body = t.slice(hm[0].length);
+  return {
+    sub: sub || firstLine.slice(0, 140),
+    from,
+    rcv: d && !isNaN(d) ? d.toISOString() : null,
+    body
+  };
+}
+
+/* ---------------- rendering ---------------- */
+
+function render() {
+  renderTiles(); renderChart(); renderRail(); renderLedger();
+}
+
+function renderTiles() {
+  const recs = S.recs;
+  const pos = recs.filter(r => r.kind === "pos").length;
+  const jd = recs.length - pos;
+  const years = recs.map(recYear);
+  const lo = years.length ? Math.min(...years) : null;
+  const hi = years.length ? Math.max(...years) : null;
+  const depts = new Set(recs.map(r => (r.dept || "").trim().toLowerCase()).filter(Boolean));
+  $("#tiles").innerHTML = `
+    <div class="tile"><div class="label">Records</div><div class="value num">${recs.length}</div><div class="sub num">${depts.size ? depts.size + " department" + (depts.size === 1 ? "" : "s") : "add departments as you file"}</div></div>
+    <div class="tile"><div class="label"><span class="dot" style="background:var(--pos)"></span>New Positions</div><div class="value num">${pos}</div><div class="sub">position announcements</div></div>
+    <div class="tile"><div class="label"><span class="dot" style="background:var(--jd)"></span>Job Descriptions</div><div class="value num">${jd}</div><div class="sub">JDs &amp; JD updates</div></div>
+    <div class="tile"><div class="label">Coverage</div><div class="value num" style="font-size:24px;padding-top:4px">${lo == null ? "—" : lo === hi ? lo : lo + "–" + hi}</div><div class="sub num">${lo == null ? "no records yet" : (hi - lo + 1) + " year" + (hi === lo ? "" : "s") + " of history"}</div></div>`;
+}
+
+function renderChart() {
+  const host = $("#chart");
+  if (!S.recs.length) {
+    host.innerHTML = `<p class="hint" style="padding:24px 0;text-align:center">Nothing archived yet — drop the first historical email onto this page and coverage draws itself.</p>`;
+    $("#legend").innerHTML = "";
+    return;
+  }
+  const byYear = {};
+  for (const r of S.recs) {
+    const y = recYear(r);
+    byYear[y] = byYear[y] || { pos: 0, jd: 0 };
+    byYear[y][r.kind === "jd" ? "jd" : "pos"]++;
+  }
+  const years = Object.keys(byYear).map(Number);
+  let lo = Math.min(...years), hi = Math.max(...years);
+  if (hi - lo > 29) lo = hi - 29; // show the most recent 30 years
+  const cols = [];
+  for (let y = lo; y <= hi; y++) cols.push({ y, pos: (byYear[y] || {}).pos || 0, jd: (byYear[y] || {}).jd || 0 });
+  const maxT = Math.max(1, ...cols.map(c => c.pos + c.jd));
+  const W = Math.max(320, host.clientWidth || 640), H = 180;
+  const padL = 30, padR = 8, padT = 22, padB = 24;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const n = cols.length;
+  const bw = Math.min(56, (iw / n) * 0.6);
+  const gap = 2;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Archived records per year, split by kind">`;
+  const ticks = maxT <= 4 ? maxT : 4;
+  for (let t = 1; t <= ticks; t++) {
+    const v = Math.round((maxT / ticks) * t);
+    const y = padT + ih - (v / maxT) * ih;
+    svg += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/>` +
+           `<text x="${padL - 6}" y="${y + 3.5}" text-anchor="end" font-size="10" fill="var(--muted)" class="num">${v}</text>`;
+  }
+  svg += `<line x1="${padL}" y1="${padT + ih}" x2="${W - padR}" y2="${padT + ih}" stroke="var(--baseline)" stroke-width="1"/>`;
+  const labelEvery = Math.ceil(n / Math.floor(iw / 46));
+  cols.forEach((c, i) => {
+    const cx = padL + (iw / n) * (i + 0.5);
+    const x = cx - bw / 2;
+    let y = padT + ih;
+    const segs = [["pos", c.pos], ["jd", c.jd]].filter(s => s[1] > 0);
+    segs.forEach(([k, v], si) => {
+      const h = Math.max(2, (v / maxT) * ih - (si > 0 ? gap : 0));
+      y -= h + (si > 0 ? gap : 0);
+      const topmost = si === segs.length - 1;
+      const r = topmost ? 3.5 : 0;
+      svg += `<path d="M${x},${y + h} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + bw - r},${y} Q${x + bw},${y} ${x + bw},${y + r} L${x + bw},${y + h} Z"
+        fill="var(--${k})" tabindex="0" data-tip="${esc(kindName(k))} — ${v}|${c.y}" data-year="${c.y}" style="cursor:pointer"><title>${esc(kindName(k))}: ${v} (${c.y})</title></path>`;
+    });
+    const total = c.pos + c.jd;
+    if (total) svg += `<text x="${cx}" y="${y - 5}" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--ink-2)" class="num">${total}</text>`;
+    if (i % labelEvery === 0 || i === n - 1) svg += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)" class="num">${c.y}</text>`;
+  });
+  svg += "</svg>";
+  host.innerHTML = svg;
+  const pos = S.recs.filter(r => r.kind === "pos").length;
+  $("#legend").innerHTML =
+    `<span class="lg"><span class="dot" style="background:var(--pos)"></span>New Position<strong class="num" style="color:var(--ink)">${pos}</strong></span>` +
+    `<span class="lg"><span class="dot" style="background:var(--jd)"></span>Job Description<strong class="num" style="color:var(--ink)">${S.recs.length - pos}</strong></span>` +
+    `<span class="lg" style="color:var(--muted)">click a bar to filter that year</span>`;
+}
+
+function deptList() {
+  const seen = new Map();
+  for (const r of S.recs) {
+    const d = (r.dept || "").trim();
+    if (d) seen.set(d.toLowerCase(), d);
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
+
+function yearList() {
+  return [...new Set(S.recs.map(recYear))].sort((a, b) => b - a);
+}
+
+function renderRail() {
+  const vis = visibleRecs();
+  $("#rail").innerHTML = `
+    <div class="kindset" role="group" aria-label="Kind">
+      <button data-kind="all" aria-pressed="${Q.kind === "all"}">All</button>
+      <button data-kind="pos" aria-pressed="${Q.kind === "pos"}"><span class="kdot" style="background:var(--pos)"></span>New Positions</button>
+      <button data-kind="jd" aria-pressed="${Q.kind === "jd"}"><span class="kdot" style="background:var(--jd)"></span>Job Descriptions</button>
+    </div>
+    <select id="f-dept" aria-label="Department">
+      <option value="">All departments</option>
+      ${deptList().map(d => `<option value="${esc(d)}" ${Q.dept === d ? "selected" : ""}>${esc(d)}</option>`).join("")}
+    </select>
+    <select id="f-year" aria-label="Year">
+      <option value="">All years</option>
+      ${yearList().map(y => `<option value="${y}" ${String(Q.year) === String(y) ? "selected" : ""}>${y}</option>`).join("")}
+    </select>
+    <select id="f-sort" aria-label="Sort">
+      <option value="new" ${Q.sort === "new" ? "selected" : ""}>Newest first</option>
+      <option value="old" ${Q.sort === "old" ? "selected" : ""}>Oldest first</option>
+      <option value="az" ${Q.sort === "az" ? "selected" : ""}>Title A–Z</option>
+    </select>
+    <span class="result-n num">${vis.length === S.recs.length ? `${S.recs.length} record${S.recs.length === 1 ? "" : "s"}` : `${vis.length} of ${S.recs.length} records`}</span>`;
+  $("#f-dept").onchange = e => { Q.dept = e.target.value; renderRail(); renderLedger(); };
+  $("#f-year").onchange = e => { Q.year = e.target.value; renderRail(); renderLedger(); };
+  $("#f-sort").onchange = e => { Q.sort = e.target.value; renderRail(); renderLedger(); };
+  $("#rail").querySelectorAll("[data-kind]").forEach(b => b.onclick = () => { Q.kind = b.dataset.kind; renderRail(); renderLedger(); });
+}
+
+function visibleRecs() {
+  const terms = Q.q.toLowerCase().split(/\s+/).filter(Boolean);
+  let out = S.recs.filter(r => {
+    if (Q.kind !== "all" && r.kind !== Q.kind) return false;
+    if (Q.dept && (r.dept || "").trim().toLowerCase() !== Q.dept.toLowerCase()) return false;
+    if (Q.year && String(recYear(r)) !== String(Q.year)) return false;
+    if (terms.length) {
+      const hay = [r.title, r.dept, r.sub, r.from, r.body, r.note, r.by, ...Object.values(r.spec || {})].join("\n").toLowerCase();
+      if (!terms.every(t => hay.includes(t))) return false;
+    }
+    return true;
+  });
+  if (Q.sort === "az") out = out.slice().sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  else out = out.slice().sort((a, b) => (Q.sort === "old" ? 1 : -1) * (recDate(a) - recDate(b)));
+  return out;
+}
+
+function recRow(r) {
+  const open = openIds.has(r.id);
+  const d = recDate(r);
+  return `<article class="rec ${open ? "open" : ""}" data-id="${r.id}">
+    <button class="rec-head" data-act="toggle" aria-expanded="${open}">
+      <span class="pill ${r.kind}">${kindName(r.kind)}</span>
+      <span class="r-main">
+        <span class="r-title">${esc(r.title)}</span>
+        ${(() => { const bits = [r.dept, (r.spec || {}).grade, (r.spec || {}).salary].filter(Boolean); return bits.length ? `<span class="r-dept">${esc(bits.join(" · "))}</span>` : ""; })()}
+      </span>
+      <span class="r-from">${esc(r.from || "—")}</span>
+      <span class="r-date num">${esc(fmtShort(d))}</span>
+      <svg class="r-chev" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="m3.5 5.5 3.5 3.5 3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    ${open ? `<div class="rec-detail">
+      <div class="d-meta">
+        <span><strong>Subject</strong> ${esc(r.sub)}</span>
+        ${r.from ? `<span><strong>From</strong> ${esc(r.from)}</span>` : ""}
+        <span><strong>Received</strong> <span class="num">${esc(fmtFull(d))}</span></span>
+        ${r.by ? `<span><strong>Filed by</strong> ${esc(r.by)}</span>` : r.via === "auto" ? "<span><strong>Filed</strong> automatically</span>" : ""}
+      </div>
+      ${(() => {
+        const sp = r.spec || {};
+        const cells = SPEC_DEFS.filter(([k]) => sp[k]).map(([k, label]) =>
+          `<div><div class="sp-l">${esc(label)}</div><div class="sp-v">${esc(sp[k])}</div></div>`).join("");
+        return cells ? `<div class="spec-grid">${cells}</div>` : "";
+      })()}
+      ${r.body ? `<pre class="body-pre">${esc(r.body)}</pre>` : `<p class="body-empty">No email body was captured for this record — edit it to paste the text in.</p>`}
+      ${r.note ? `<p class="d-note"><strong>Note:</strong> ${esc(r.note)}</p>` : ""}
+      ${RO ? "" : `<div class="d-acts">
+        <button class="btn small" data-act="edit">Edit</button>
+        <button class="btn small danger" data-act="del">Delete</button>
+      </div>`}
+    </div>` : ""}
+  </article>`;
+}
+
+function renderLedger() {
+  const host = $("#ledger");
+  const vis = visibleRecs();
+  if (!S.recs.length) {
+    host.innerHTML = `<div class="empty-state"><strong>The archive is empty.</strong><br>Drop saved <strong>.eml</strong> / <strong>.msg</strong> files anywhere on this page, paste an email with Ctrl+V, or use + Add record.<br>Everything filed here — including the full job description text — becomes searchable for the whole team.</div>`;
+    return;
+  }
+  if (!vis.length) {
+    host.innerHTML = `<div class="empty-state">No records match${Q.q ? ` “${esc(Q.q)}”` : ""} with the current filters.</div>`;
+    return;
+  }
+  if (Q.sort === "az") {
+    host.innerHTML = `<div class="recs" style="margin-top:14px">${vis.map(recRow).join("")}</div>`;
+    return;
+  }
+  const groups = [];
+  for (const r of vis) {
+    const y = recYear(r);
+    if (!groups.length || groups[groups.length - 1].y !== y) groups.push({ y, recs: [] });
+    groups[groups.length - 1].recs.push(r);
+  }
+  host.innerHTML = groups.map(g => `
+    <div class="yearhead"><h2 class="num">${g.y}</h2><span class="n num">${g.recs.length} record${g.recs.length === 1 ? "" : "s"}</span><span class="rule"></span></div>
+    <div class="recs">${g.recs.map(recRow).join("")}</div>`).join("");
+}
+
+/* ---------------- tooltips + chart year filter ---------------- */
+
+document.addEventListener("pointermove", e => {
+  const seg = e.target.closest && e.target.closest("[data-tip]");
+  const tip = $("#tip");
+  if (!seg) { tip.style.display = "none"; return; }
+  const [t1, t2] = seg.getAttribute("data-tip").split("|");
+  tip.innerHTML = `<div class="t1">${esc(t1)}</div><div class="t2">${esc(t2)}</div>`;
+  tip.style.display = "block";
+  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 10);
+  tip.style.left = x + "px";
+  tip.style.top = Math.max(8, e.clientY - tip.offsetHeight - 12) + "px";
+});
+
+$("#chart").addEventListener("click", e => {
+  const seg = e.target.closest && e.target.closest("[data-year]");
+  if (!seg) return;
+  Q.year = Q.year === seg.dataset.year ? "" : seg.dataset.year;
+  renderRail(); renderLedger();
+  $("#ledger").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+/* ---------------- search ---------------- */
+
+$("#q").addEventListener("input", e => {
+  Q.q = e.target.value;
+  $("#q-clear").hidden = !Q.q;
+  clearTimeout(renderLedger._t);
+  renderLedger._t = setTimeout(() => { renderRail(); renderLedger(); }, 120);
+});
+$("#q-clear").addEventListener("click", () => {
+  Q.q = ""; $("#q").value = ""; $("#q-clear").hidden = true;
+  renderRail(); renderLedger(); $("#q").focus();
+});
+
+/* ---------------- ledger interactions ---------------- */
+
+$("#ledger").addEventListener("click", e => {
+  const rec = e.target.closest(".rec"); if (!rec) return;
+  const act = e.target.closest("[data-act]");
+  const id = rec.dataset.id;
+  if (!act) return;
+  if (act.dataset.act === "toggle") {
+    if (openIds.has(id)) openIds.delete(id); else openIds.add(id);
+    renderLedger();
+    return;
+  }
+  if (RO) return;
+  if (act.dataset.act === "edit") return openRecModal(id);
+  if (act.dataset.act === "del") {
+    const r = S.recs.find(x => x.id === id); if (!r) return;
+    const idx = S.recs.indexOf(r);
+    S.recs.splice(idx, 1);
+    openIds.delete(id);
+    commit(4000);
+    toast(`Deleted “${r.title.slice(0, 48)}” from the archive`, "Undo", () => { S.recs.splice(idx, 0, r); commit(); });
+  }
+});
+
+/* ---------------- drops & paste ---------------- */
+
+let dragDepth = 0;
+const isExternalDrag = dt => dt && Array.from(dt.types || []).some(t => t === "Files" || t === "text/plain" || t === "text/html");
+document.addEventListener("dragenter", e => {
+  if (RO || !isExternalDrag(e.dataTransfer)) return;
+  dragDepth++;
+  document.body.classList.add("dragging-in");
+});
+document.addEventListener("dragleave", () => {
+  if (dragDepth > 0 && --dragDepth === 0) document.body.classList.remove("dragging-in");
+});
+document.addEventListener("dragover", e => { if (!RO) e.preventDefault(); });
+document.addEventListener("drop", async e => {
+  e.preventDefault();
+  dragDepth = 0; document.body.classList.remove("dragging-in");
+  if (RO) return;
+  const dt = e.dataTransfer;
+  if (dt.files && dt.files.length) {
+    const files = Array.from(dt.files).slice(0, 50);
+    if (files.length === 1) {
+      const fields = await fileToFields(files[0]);
+      openRecModal(null, fields, "drop");
+      return;
+    }
+    let added = 0, pos = 0, dups = 0;
+    for (const f of files) {
+      const fields = await fileToFields(f);
+      fields.kind = kindGuess(fields.sub, fields.body);
+      const r = addRec(fields, "drop");
+      if (r.dup) { dups++; continue; }
+      added++; if (r.r.kind === "pos") pos++;
+    }
+    commit(4000);
+    toast(`Archived ${added} email${added === 1 ? "" : "s"} (${pos} position${pos === 1 ? "" : "s"}, ${added - pos} JD${added - pos === 1 ? "" : "s"})${dups ? ` — ${dups} duplicate${dups === 1 ? "" : "s"} skipped` : ""}. Review kinds below and edit any that guessed wrong.`);
+    return;
+  }
+  const html = dt.getData("text/html"), text = dt.getData("text/plain");
+  if (text || html) openRecModal(null, parseLoose(text || stripHtml(html)), "drop");
+});
+
+async function fileToFields(f) {
+  try {
+    if (/\.msg$/i.test(f.name)) return parseMsg(await f.arrayBuffer());
+    const text = await f.text();
+    const fields = /^(received|from|subject|date|to|mime-version):/im.test(text) ? parseEml(text) : parseLoose(text);
+    if (!fields.sub) fields.sub = f.name.replace(/\.(eml|msg|txt|json)$/i, "");
+    return fields;
+  } catch {
+    return { sub: f.name.replace(/\.(eml|msg)$/i, ""), body: "" };
+  }
+}
+
+document.addEventListener("paste", e => {
+  if (RO) return;
+  if (e.target.closest("input, textarea, select, .modal, #drawer")) return;
+  const text = e.clipboardData.getData("text/plain");
+  const html = e.clipboardData.getData("text/html");
+  if (!text && !html) return;
+  e.preventDefault();
+  openRecModal(null, parseLoose(text || stripHtml(html)), "paste");
+});
+
+/* ---------------- modals ---------------- */
+
+function openModal(html) { $("#modal").innerHTML = html; $("#veil").classList.add("open"); const f = $("#modal input, #modal select"); if (f) f.focus(); }
+function closeModal() { $("#veil").classList.remove("open"); ssDel("pa-draft"); }
+$("#veil").addEventListener("click", e => { if (e.target.id === "veil") closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeDrawer(); } });
+
+function openRecModal(editId, fields, via) {
+  const editing = editId ? S.recs.find(x => x.id === editId) : null;
+  fields = editing ? editing : (fields || {});
+  if (!editing) {
+    if (!fields.kind) fields.kind = kindGuess(fields.sub, fields.body);
+    if (!fields.spec || !Object.keys(fields.spec).length) fields.spec = extractSpecs(fields.body || "");
+    if (!fields.title) fields.title = specTitle(fields.body || "") || titleFromSub(fields.sub);
+    ssSet("pa-draft", JSON.stringify({ fields, via }));
+  }
+  const sp = fields.spec || {};
+  const needName = !lsGet("pa-name");
+  openModal(`
+    <h2>${editing ? "Edit record" : "Add to the archive"}</h2>
+    <div class="grid2">
+      <div>
+        <label for="f-kind">Kind</label>
+        <select id="f-kind">
+          <option value="pos" ${fields.kind !== "jd" ? "selected" : ""}>New Position</option>
+          <option value="jd" ${fields.kind === "jd" ? "selected" : ""}>Job Description</option>
+        </select>
+      </div>
+      <div>
+        <label for="f-date">Received</label>
+        <input id="f-date" type="date" value="${fields.rcv ? fields.rcv.slice(0, 10) : ""}">
+      </div>
+    </div>
+    <label for="f-title">Position title</label>
+    <input id="f-title" value="${esc(fields.title || "")}" maxlength="200" placeholder="e.g. IRB Coordinator">
+    <label>Position details ${editing ? "" : "(read from the email body automatically — correct anything it missed)"}</label>
+    <div class="grid2">
+      ${SPEC_DEFS.map(([k, label]) => `<div>
+        <label for="f-sp-${k}" style="margin-top:4px">${esc(label)}</label>
+        <input id="f-sp-${k}" value="${esc(sp[k] || "")}" maxlength="160" placeholder="${k === "grade" ? "e.g. GR 17" : k === "salary" ? "e.g. $23.25 – $36.04" : ""}">
+      </div>`).join("")}
+    </div>
+    <div class="grid2">
+      <div>
+        <label for="f-mdept">Department / team</label>
+        <input id="f-mdept" value="${esc(fields.dept || "")}" maxlength="100" list="dept-list" placeholder="e.g. Finance">
+        <datalist id="dept-list">${deptList().map(d => `<option value="${esc(d)}">`).join("")}</datalist>
+      </div>
+      <div>
+        <label for="f-from">From</label>
+        <input id="f-from" value="${esc(fields.from || "")}" placeholder="Name <email>">
+      </div>
+    </div>
+    <label for="f-sub">Email subject</label>
+    <input id="f-sub" value="${esc(fields.sub || "")}" maxlength="300">
+    <label for="f-body">Email body — the job description / announcement text (searchable)</label>
+    <textarea id="f-body" rows="8" maxlength="20500">${esc(fields.body || "")}</textarea>
+    <label for="f-note">Note (optional)</label>
+    <input id="f-note" value="${esc(fields.note || "")}" maxlength="500" placeholder="e.g. superseded by the 2024 re-level">
+    ${needName && !editing ? `
+    <label for="f-by">Your initials (shown on records you file — remembered on this device)</label>
+    <input id="f-by" maxlength="12" placeholder="e.g. MG">` : ""}
+    <div class="m-acts">
+      <button class="btn" data-m="cancel">Cancel</button>
+      <button class="btn primary" data-m="save">${editing ? "Save" : "Add record"}</button>
+    </div>`);
+  $("#modal").onclick = e => {
+    const b = e.target.closest("button[data-m]"); if (!b) return;
+    if (b.dataset.m === "cancel") return closeModal();
+    const byEl = $("#f-by");
+    if (byEl && byEl.value.trim()) lsSet("pa-name", byEl.value.trim());
+    const f = {
+      kind: $("#f-kind").value,
+      title: $("#f-title").value.trim(),
+      dept: $("#f-mdept").value.trim(),
+      from: $("#f-from").value.trim(),
+      sub: $("#f-sub").value.trim(),
+      body: $("#f-body").value,
+      note: $("#f-note").value.trim(),
+      rcv: $("#f-date").value ? new Date($("#f-date").value + "T12:00:00").toISOString() : (fields.rcv || null),
+      mid: fields.mid || null,
+      imid: fields.imid || null,
+      spec: {}
+    };
+    for (const [k] of SPEC_DEFS) {
+      const v = $("#f-sp-" + k).value.trim();
+      if (v) f.spec[k] = v.slice(0, 160);
+    }
+    if (!f.title && !f.sub) { $("#f-title").focus(); return; }
+    if (!f.title) f.title = titleFromSub(f.sub);
+    if (editing) {
+      Object.assign(editing, f, { body: cleanBody(f.body) });
+      commit();
+    } else {
+      const r = addRec(f, via || "manual");
+      if (r.dup) { toast("Already in the archive — skipped duplicate."); closeModal(); return; }
+      openIds.add(r.r.id);
+      commit(4000);
+      toast(`Archived “${r.r.title.slice(0, 48)}”`, "Undo", () => { S.recs = S.recs.filter(x => x.id !== r.r.id); commit(); });
+    }
+    closeModal();
+  };
+}
+
+/* ---------------- export ---------------- */
+
+$("#btn-export").addEventListener("click", () => {
+  openModal(`
+    <h2>Export the archive</h2>
+    <button class="x-opt" data-x="csv">
+      <div><div class="t">CSV index</div><div class="s">One row per record: date, kind, title, department, subject, sender, note. Opens in Excel; bodies excluded to keep it readable.</div></div>
+    </button>
+    <button class="x-opt" data-x="json">
+      <div><div class="t">JSON backup</div><div class="s">The complete archive including every email body — the file to keep as a full offline copy or to migrate into the future system.</div></div>
+    </button>
+    <div class="m-acts"><button class="btn" data-m="cancel">Cancel</button></div>`);
+  $("#modal").onclick = async e => {
+    const c = e.target.closest("button[data-m]");
+    if (c) return closeModal();
+    const b = e.target.closest("button[data-x]"); if (!b) return;
+    const which = b.dataset.x;
+    closeModal();
+    const stamp = new Date().toISOString().slice(0, 10);
+    let filename, data;
+    if (which === "csv") {
+      const specCols = SPEC_DEFS.map(([, label]) => label.toLowerCase().replace(/[^a-z0-9]+/g, "_"));
+      const rows = [["received", "kind", "title", "department", ...specCols, "subject", "from", "note", "body_chars", "filed_by", "via", "added"]];
+      for (const r of visibleRecs().length === S.recs.length ? S.recs : visibleRecs()) {
+        const sp = r.spec || {};
+        rows.push([r.rcv || "", kindName(r.kind), r.title, r.dept || "", ...SPEC_DEFS.map(([k]) => sp[k] || ""), r.sub, r.from || "", r.note || "", (r.body || "").length, r.by || "", r.via || "", r.added]);
+      }
+      data = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+      filename = "position-archive-" + stamp + ".csv";
+    } else {
+      data = JSON.stringify({ exported: new Date().toISOString(), records: S.recs }, null, 2);
+      filename = "position-archive-" + stamp + ".json";
+    }
+    if (!dl) dl = await window.claude?.use?.("downloads");
+    if (!dl) { toast("Downloads aren't available in this view."); return; }
+    try { await dl.save({ filename, data }); }
+    catch (err) {
+      const code = err && err.code;
+      if (code === "extension_not_enabled" || code === "rejected_extension") {
+        try { await dl.save({ filename: filename.replace(/\.\w+$/, ".txt"), data }); } catch {}
+      } else if (code !== "declined") toast("Export failed — try again.");
+    }
+  };
+});
+
+/* ---------------- drawer ---------------- */
+
+function openDrawer() { $("#drawer").classList.add("open"); renderDrawer(); }
+function closeDrawer() { $("#drawer").classList.remove("open"); }
+$("#btn-drawer").addEventListener("click", openDrawer);
+$("#btn-drawer-close").addEventListener("click", closeDrawer);
+
+function renderDrawer() {
+  if (!$("#drawer").classList.contains("open")) return;
+  const m = S.meta || {};
+  const status = m.lastSweep
+    ? `<div class="status-line"><span class="sdot ok"></span><span>Automation active — last sweep ${esc(new Date(m.lastSweep).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}, ${m.swept || 0} record${m.swept === 1 ? "" : "s"} auto-archived so far.</span></div>`
+    : `<div class="status-line"><span class="sdot idle"></span><span>No automated sweep has run yet. Once the Power Automate flow starts dropping files into <code>archive-inbox/</code>, Claude archives them here on its schedule (weekday afternoons).</span></div>`;
+  const sample = JSON.stringify({ subject: "New Position — Senior Compensation Analyst", from: "Dana Reyes <dana@fabrikam.com>", received: "2021-03-09T14:02:00Z", category: "New Position", id: "unique-message-id", imid: "internet-message-id", body: "Full announcement / job description text…", bodyType: "html" }, null, 2);
+  $("#drawer-body").innerHTML = `
+    <h3>What this archive is</h3>
+    <p>The team's institutional record of <strong>New Position</strong> announcements and <strong>Job Description</strong> emails. The full email text is preserved and searchable, so history that used to live in individual mailboxes is now in one shared place — the bridge until (and after) the new system takes over.</p>
+    <p>When an email is filed, the structured components at the top of these emails — <em>Title, PL/CC/JC, Grade, Salary Range, FLSA, PPT Level, License, FTE Leader, Direct Supervision, FTE Hours, Reports to, JD Status</em> — are read out of the body automatically and shown as fields on the record (and in the CSV export). Anything the reader misses can be fixed with Edit.</p>
+
+    <h3>Auto-archiving from Outlook</h3>
+    ${status}
+    <p>Nothing on the Microsoft side is ever read by Claude. Your Power Automate flow <em>pushes</em> one JSON file per categorized email — including its body — into the repo's <code>archive-inbox/</code> folder, and a scheduled Claude task files them here.</p>
+
+    <h3>Backfilling the legacy history</h3>
+    <ol>
+      <li><strong>Bulk drag &amp; drop</strong> — in Outlook, select any number of old emails and drag them into a desktop folder (they save as .msg), then drop the whole batch anywhere on this page. Kind is guessed from the subject; skim and correct after.</li>
+      <li><strong>One-time flow run</strong> — point the Power Automate flow's Graph query at the past instead of the present, e.g. add <code>receivedDateTime ge 2019-01-01</code> to the <code>$filter</code>, and let it push the history into <code>archive-inbox/</code> in batches.</li>
+    </ol>
+    <p>Duplicates are skipped automatically (by message id, and by identical subject + date), so overlapping backfills are safe.</p>
+
+    <h3>Your initials on filed records</h3>
+    <div class="field-row">
+      <input id="set-name" value="${esc(lsGet("pa-name") || "")}" maxlength="12" placeholder="e.g. MG" aria-label="Your initials">
+      <button class="btn small" id="btn-name-save">Save</button>
+    </div>
+
+    <h3>The push file format</h3>
+    <p>Any <code>.json</code> file in <code>archive-inbox/</code> shaped like this (only <code>subject</code> is required; <code>category</code> decides the kind):</p>
+    <pre>${esc(sample)}</pre>
+    <p>The exact Power Automate recipe lives in the repo's <code>archive-inbox/README.md</code>.</p>`;
+  $("#btn-name-save").onclick = () => { lsSet("pa-name", $("#set-name").value.trim()); toast("Saved — records you file will carry your initials."); };
+}
+
+/* ---------------- boot ---------------- */
+
+window.__pa = { parseEml, parseMsg, parseLoose, mimeText, stripHtml, kindGuess, titleFromSub, extractSpecs, specTitle, assemble }; // console/test access
+
+$("#btn-add").addEventListener("click", () => openRecModal(null, null, "manual"));
+addEventListener("resize", () => { clearTimeout(renderChart._t); renderChart._t = setTimeout(renderChart, 150); });
+
+(function boot() {
+  render();
+  // restore UI position after a save-triggered reload
+  try {
+    if (ssGet("pa-saved")) { ssDel("pa-saved"); chip("Saved for everyone", 2200); }
+    const ui = ssGet("pa-ui");
+    if (ui) {
+      ssDel("pa-ui");
+      const { scroll, drawer, open, q } = JSON.parse(ui);
+      (open || []).forEach(id => openIds.add(id));
+      if (q) { Object.assign(Q, q); $("#q").value = Q.q || ""; $("#q-clear").hidden = !Q.q; }
+      render();
+      if (drawer) openDrawer();
+      if (scroll) scrollTo(0, scroll);
+    }
+    const d = ssGet("pa-draft");
+    if (d) { const { fields, via } = JSON.parse(d); openRecModal(null, fields, via); }
+  } catch {}
+  // resolve the artifact capability in the background; page works without it
+  Promise.resolve(window.claude?.use?.("artifact")).then(a => {
+    art = a;
+    if (!a) { savingUnavailable = true; chip("Not connected — changes stay on this screen only", 5000); }
+  });
+})();
+
+})();
+</script>
