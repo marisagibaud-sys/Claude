@@ -124,6 +124,18 @@ not the filter:
 `$filter` must match the Outlook category exactly, including capitalization
 and the `/` in `Job Description Review/Update`.
 
+**HTTP action: "URI … is not valid. The URI must be a well formed absolute
+URI"** — the GitHub step's URI field is incomplete, usually after editing
+the path: it no longer starts with `https://`, or a space/line break got
+in. Clear the field and re-paste in full:
+
+```
+https://api.github.com/repos/marisagibaud-sys/Claude/contents/archive-inbox/@{guid()}.json
+```
+
+`@{guid()}` should render as an expression token once you click out of the
+field; if it stays plain text, re-insert it via *Expression* → `guid()`.
+
 **GitHub PUT fails with "is at \<sha\> but expected \<sha\>"** — a branch
 race: each file PUT is a git commit, and *Apply to each* runs iterations in
 parallel by default, so simultaneous PUTs to the same branch conflict. Two
