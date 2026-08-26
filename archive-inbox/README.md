@@ -41,23 +41,34 @@ is required):
 ## Power Automate recipe (ongoing feed)
 
 Mirrors the Triage Volume Board flow in the main README, with two changes:
-the Graph query filters on the two archive categories and selects the body,
-and files land here instead of `inbox/`.
+the Graph query selects the body, and files land here instead of `inbox/`.
+Build it as the board does — **one flow per category** (or one flow with two
+GET + Apply-to-each pairs), which keeps each query identical to the shape
+already proven in this tenant:
 
-1. **Find categorized mail** — *Office 365 Outlook → Send an HTTP request*:
+1. **Find categorized mail** — *Office 365 Outlook → Send an HTTP request*.
+   Method `GET` in the **Method dropdown** (never typed into the URI field);
+   the **URI field gets exactly one line**, no backticks, straight quotes:
+
+   Flow A (New Position):
 
    ```
-   GET https://graph.microsoft.com/v1.0/me/messages?$filter=(categories/any(c:c eq 'New Position') or categories/any(c:c eq 'Job Description Review/Update')) and not(categories/any(c:c eq 'Archived'))&$select=id,internetMessageId,subject,from,receivedDateTime,categories,body
+   https://graph.microsoft.com/v1.0/me/messages?$filter=categories/any(c:c eq 'New Position') and not(categories/any(c:c eq 'Archived'))&$select=id,internetMessageId,subject,from,receivedDateTime,categories,body
    ```
 
-2. **Apply to each** item in `body(...)?['value']` — **Compose** the payload:
+   Flow B (Job Description Review/Update): the same line with
+   `'Job Description Review/Update'` in place of `'New Position'`.
+
+2. **Apply to each** item in `body(...)?['value']` — **Compose** the payload
+   (the `category` value is simply hardcoded per flow — `"New Position"` in
+   Flow A, `"Job Description Review/Update"` in Flow B):
 
    ```json
    {
      "subject": "@{item()?['subject']}",
      "from": "@{item()?['from']?['emailAddress']?['name']} <@{item()?['from']?['emailAddress']?['address']}>",
      "received": "@{item()?['receivedDateTime']}",
-     "category": "@{coalesce(first(intersection(item()?['categories'], createArray('New Position','Job Description Review/Update'))), first(item()?['categories']))}",
+     "category": "New Position",
      "id": "@{item()?['id']}",
      "imid": "@{item()?['internetMessageId']}",
      "body": "@{item()?['body']?['content']}",
@@ -91,6 +102,28 @@ and files land here instead of `inbox/`.
 The fine-grained token is the same one the board flow uses (scoped to this
 repo, *Contents: Read and write*).
 
+### If the *Send an HTTP request* step fails
+
+**"URI path is not a valid Graph endpoint … Invalid resource, Allowed
+values: me,users"** — this comes from the Outlook connector's own URI
+parser, *before* anything is sent to Graph, and it means the URI field
+didn't parse to `…/me/messages`. The `$filter` contents can never cause
+this error (a bad filter comes back as a Graph 400 instead). Fix the field,
+not the filter:
+
+1. Delete everything in the URI field and re-paste the one-line URI from
+   step 1 above. It must **start with** `https://graph.microsoft.com/` —
+   no `GET ` prefix (the method lives in the dropdown), no backticks, no
+   surrounding quotes, no line break anywhere in the middle.
+2. Check the quotes around the category name are straight (`'New Position'`)
+   — pasting through Word/OneNote/Teams can curl them.
+3. Still failing? Retype the URI by hand up to `…/me/messages`, then paste
+   only the query string after `?`.
+
+**A Graph 400/error mentioning the filter** — the category name in the
+`$filter` must match the Outlook category exactly, including capitalization
+and the `/` in `Job Description Review/Update`.
+
 ## Backfilling the legacy history
 
 Two ways, safe to combine:
@@ -99,11 +132,11 @@ Two ways, safe to combine:
   drag them into a desktop folder (they save as `.msg`), then drop the whole
   batch anywhere on the archive page. Subject, sender, original date, full
   body, and the components are all read from the files.
-- **One-time flow run** — run the recipe above with a date window instead of
-  a category gate, e.g.:
+- **One-time flow run** — run each flow with a date window added to its
+  `$filter`, e.g. for Flow A:
 
   ```
-  $filter=receivedDateTime ge 2019-01-01T00:00:00Z and receivedDateTime lt 2020-01-01T00:00:00Z and (categories/any(c:c eq 'New Position') or categories/any(c:c eq 'Job Description Review/Update'))
+  $filter=receivedDateTime ge 2019-01-01T00:00:00Z and receivedDateTime lt 2020-01-01T00:00:00Z and categories/any(c:c eq 'New Position')
   ```
 
   Run it a year at a time (Graph pages at 10 by default — follow

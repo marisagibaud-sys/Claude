@@ -247,13 +247,14 @@
     <p>Same trust model as the board: Claude never touches the mailbox. A Power Automate flow you control <em>pushes</em> categorized emails into the repo, and a scheduled sweep (weekdays, three times a day) files them into the archive.</p>
     <ol>
       <li>Reuse the fine-grained GitHub token from the board flow (repo-scoped, <em>Contents: Read and write</em>) — or mint a fresh one the same way.</li>
-      <li>Clone the board's flow and make the four changes for the archive, or build from the full recipe in <a href="https://github.com/marisagibaud-sys/Claude/blob/claude/email-archive-positions-v00ubh/archive-inbox/README.md" target="_blank" rel="noopener">archive-inbox/README.md</a>:
+      <li>Clone the board's flow <strong>twice — one flow per category</strong> ("New Position" and "Job Description Review/Update"), keeping each query the same shape as the board's proven one, with four changes per the full recipe in <a href="https://github.com/marisagibaud-sys/Claude/blob/claude/email-archive-positions-v00ubh/archive-inbox/README.md" target="_blank" rel="noopener">archive-inbox/README.md</a>:
         <ul>
-          <li><strong>Filter</strong> on the two archive categories:<br><code>categories/any(c:c eq 'New Position') or categories/any(c:c eq 'Job Description Review/Update')</code> — and exclude an <code>'Archived'</code> marker category instead of <code>'Logged'</code>.</li>
+          <li><strong>Filter</strong> on that flow's category, excluding an <code>'Archived'</code> marker instead of <code>'Logged'</code>; the Compose payload's <code>category</code> is simply hardcoded to the flow's category name.</li>
           <li><strong>Select the body</strong> — add <code>body</code> to the <code>$select</code> list, and add <code>"body"</code> / <code>"bodyType"</code> to the Compose payload. This is what preserves the actual job description text.</li>
           <li><strong>Destination folder</strong> — <code>archive-inbox/</code>, not <code>inbox/</code>.</li>
           <li><strong>Branch</strong> — <code>claude/email-archive-positions-v00ubh</code>.</li>
         </ul>
+        Paste each Graph URI as <strong>one unbroken line</strong> into the URI field, method in the Method dropdown — the Outlook connector rejects the request before it ever reaches Graph if the URI arrives with a <code>GET</code> prefix, a line break, backticks, or curly quotes.
       </li>
       <li>Test end-to-end: categorize one email in Outlook, run the flow manually, and confirm a new <code>.json</code> appears in <code>archive-inbox/</code> on GitHub. After the next weekday sweep, the record appears in the archive and the Guide drawer shows "Automation active".</li>
     </ol>
@@ -344,6 +345,7 @@
   <div class="ts">
     <div class="row"><div class="c">"View only" chip</div><div class="c">That person wasn't given edit access when the page was shared — re-share with edit rights, or they're a searcher by design.</div></div>
     <div class="row"><div class="c">"Not connected — changes stay on this screen only"</div><div class="c">The page was opened outside claude.ai (e.g. a saved copy). Open it from the shared artifact link instead.</div></div>
+    <div class="row"><div class="c">"URI path is not a valid Graph endpoint … Invalid resource, Allowed values: me,users"</div><div class="c">The Outlook connector's own URI check — the field didn't parse to <code>…/me/messages</code>. Re-paste the URI from the recipe as one unbroken line starting <code>https://graph.microsoft.com/</code>: no <code>GET</code> prefix (method goes in the dropdown), no backticks, no line break, straight quotes around the category name. The <code>$filter</code> contents never cause this error.</div></div>
     <div class="row"><div class="c">Flow's GitHub step returns 404</div><div class="c">Almost always the branch or token: the PUT must target branch <code>claude/email-archive-positions-v00ubh</code>, and the token needs <em>Contents: Read and write</em> on this repo.</div></div>
     <div class="row"><div class="c">Pushed files but no records yet</div><div class="c">The sweep runs on weekdays three times a day. Files wait in <code>archive-inbox/</code> until then; the Guide drawer shows the last sweep time once it has run.</div></div>
     <div class="row"><div class="c">Components didn't extract</div><div class="c">The extractor reads <code>Label: value</code> lines (Title, Grade, Salary Range, …) from the body. If an email formats them differently, open the record, click Edit, and fill the fields — they're ordinary text fields.</div></div>
