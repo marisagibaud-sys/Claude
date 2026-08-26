@@ -561,7 +561,7 @@ function isDup(fields) {
 }
 
 function cleanBody(text) {
-  let t = String(text || "").replace(/\r\n?/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  let t = String(text || "").replace(/[\u00a0\u2007\u202f]/g, " ").replace(/\r\n?/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   if (t.length > 20000) t = t.slice(0, 20000) + "\n\n[… truncated at 20,000 characters]";
   return t;
 }
@@ -592,9 +592,31 @@ const SPEC_DEFS = [
   ["jdStatus",  "JD Status",          ["Job Description Status", "JD Status"]]
 ];
 
+const ALL_LABELS = new Set(["title"]);
+SPEC_DEFS.forEach(([, , labels]) => labels.forEach(l => ALL_LABELS.add(l.toLowerCase())));
+
+/* A candidate value that is really the NEXT label ("FLSA:", "PL/CC/JC", "License: No") must be refused. */
+function looksLikeLabel(s) {
+  const t = String(s).trim().toLowerCase();
+  if (/:$/.test(t)) return true;
+  if (ALL_LABELS.has(t.replace(/:$/, "").trim())) return true;
+  const pre = t.split(":")[0].trim();
+  return t.includes(":") && ALL_LABELS.has(pre);
+}
+
 function specLine(text, label) {
-  const m = String(text || "").match(new RegExp("^[ \\t]*" + escRe(label) + "[ \\t]*:[ \\t]*(.+)$", "im"));
-  return m ? m[1].replace(/\s+/g, " ").trim().slice(0, 160) : "";
+  const t = String(text || "").replace(/[\u00a0\u2007\u202f]/g, " ");
+  // a multi-word label may be wrapped across lines inside a narrow table cell
+  const lp = label.split(/\s+/).map(escRe).join("[ \\t\\r\\n]+");
+  const clean = v => v.replace(/\s+/g, " ").trim().slice(0, 160);
+  // form 1: "Label: value" on one line
+  let m = t.match(new RegExp("^[ \\t]*" + lp + "[ \\t]*:[ \\t]*(.+)$", "im"));
+  if (m && m[1].trim() && !looksLikeLabel(m[1])) return clean(m[1]);
+  // form 2: label alone on its line (colon optional \u2014 Outlook tables strip this way),
+  // value on the next non-blank line
+  m = t.match(new RegExp("^[ \\t]*" + lp + "[ \\t]*:?[ \\t]*\\r?\\n(?:[ \\t]*\\r?\\n){0,2}[ \\t]*([^\\n]+)$", "im"));
+  if (m && m[1].trim() && !looksLikeLabel(m[1])) return clean(m[1]);
+  return "";
 }
 
 function extractSpecs(body) {
@@ -747,6 +769,85 @@ function parseEml(text) {
   };
 }
 
+/* MS-OXRTFCP compressed RTF (the "LZFu" scheme Outlook stores PR_RTF_COMPRESSED in). */
+function decompressRtf(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const rawSize = dv.getUint32(4, true);
+  const magic = dv.getUint32(8, true);
+  if (magic === 0x414c454d) return u8.subarray(16, 16 + rawSize); // "MELA": stored uncompressed
+  if (magic !== 0x75465a4c) throw new Error("bad rtf magic");     // "LZFu"
+  const DICT = "{\\rtf1\\ansi\\mac\\deff0\\deftab720{\\fonttbl;}{\\f0\\fnil \\froman \\fswiss \\fmodern \\fscript \\fdecor MS Sans SerifSymbolArialTimes New RomanCourier{\\colortbl\\red0\\green0\\blue0\r\n\\par \\pard\\plain\\f0\\fs20\\b\\i\\u\\tab\\tx";
+  const win = new Uint8Array(4096);
+  for (let i = 0; i < DICT.length; i++) win[i] = DICT.charCodeAt(i);
+  let wp = DICT.length;
+  const out = [];
+  let ip = 16;
+  outer: while (ip < u8.length && out.length < rawSize) {
+    let flags = u8[ip++];
+    for (let bit = 0; bit < 8 && out.length < rawSize; bit++, flags >>= 1) {
+      if (flags & 1) {
+        if (ip + 1 >= u8.length) break outer;
+        const b1 = u8[ip++], b2 = u8[ip++];
+        const off = (b1 << 4) | (b2 >> 4);
+        if (off === (wp & 0xfff)) break outer; // terminator reference
+        const len = (b2 & 0xf) + 2;
+        for (let k = 0; k < len; k++) {
+          const c = win[(off + k) & 0xfff];
+          out.push(c); win[wp & 0xfff] = c; wp++;
+        }
+      } else {
+        if (ip >= u8.length) break outer;
+        const c = u8[ip++];
+        out.push(c); win[wp & 0xfff] = c; wp++;
+      }
+    }
+  }
+  return new Uint8Array(out);
+}
+
+/* RTF → plain text: drops destination groups (font/color tables, pictures, the
+   \*\htmltag markup of HTML-encapsulated RTF), keeps the text, maps table
+   cells to tabs and rows/paragraphs to newlines. */
+function rtfToText(rtf) {
+  let out = "", i = 0, depth = 0, skipDepth = -1, ucSkip = 1;
+  const DEST = /^(fonttbl|colortbl|stylesheet|info|pict|object|themedata|colorschememapping|datastore|latentstyles|listtable|listoverridetable|generator|xmlnstbl|filetbl|fldinst|blipuid)$/;
+  while (i < rtf.length) {
+    const ch = rtf[i];
+    if (ch === "{") { depth++; i++; continue; }
+    if (ch === "}") { depth--; if (skipDepth >= 0 && depth < skipDepth) skipDepth = -1; i++; continue; }
+    if (ch === "\\") {
+      const m = rtf.slice(i, i + 40).match(/^\\([a-z]{1,32})(-?\d{1,10})? ?/i);
+      if (m) {
+        const word = m[1].toLowerCase(), param = m[2];
+        i += m[0].length;
+        if (skipDepth >= 0) continue;
+        if (DEST.test(word)) { skipDepth = depth; continue; }
+        if (word === "par" || word === "line" || word === "row") out += "\n";
+        else if (word === "cell" || word === "tab") out += "\t";
+        else if (word === "uc" && param != null) ucSkip = Math.max(0, +param);
+        else if (word === "u" && param != null) {
+          const code = +param < 0 ? +param + 65536 : +param;
+          try { out += String.fromCharCode(code); } catch {}
+          for (let s = ucSkip; s > 0 && i < rtf.length; s--) {
+            if (rtf[i] === "\\" && rtf[i + 1] === "'") i += 4; else i++;
+          }
+        }
+        continue;
+      }
+      const hx = rtf.slice(i, i + 4).match(/^\\'([0-9a-fA-F]{2})/);
+      if (hx) { if (skipDepth < 0) out += String.fromCharCode(parseInt(hx[1], 16)); i += 4; continue; }
+      const c2 = rtf[i + 1];
+      if (c2 === "\\" || c2 === "{" || c2 === "}") { if (skipDepth < 0) out += c2; i += 2; continue; }
+      if (c2 === "~") { if (skipDepth < 0) out += " "; i += 2; continue; }
+      if (c2 === "*") { if (skipDepth < 0) skipDepth = depth; i += 2; continue; }
+      i += 2; continue;
+    }
+    if (ch !== "\r" && ch !== "\n" && skipDepth < 0) out += ch;
+    i++;
+  }
+  return out;
+}
+
 /* Minimal MS-CFB (.msg) reader: subject, sender, received time, body. Throws on anything unexpected. */
 function parseMsg(buf) {
   const dv = new DataView(buf);
@@ -826,11 +927,27 @@ function parseMsg(buf) {
     }
   }
   const name = strProp("0c1a"), mail = strProp("5d01") || strProp("0c1f");
+  /* body: plain text (PR_BODY) → HTML (PR_HTML) → compressed RTF (PR_RTF_COMPRESSED) */
+  let body = strProp("1000") || "";
+  if (!body.trim()) {
+    const htmlE = entries.find(x => x.type === 2 && x.name.toLowerCase() === "__substg1.0_10130102");
+    if (htmlE) { try { body = stripHtml(new TextDecoder("utf-8").decode(readStream(htmlE))); } catch {} }
+  }
+  if (!body.trim()) {
+    const rtfE = entries.find(x => x.type === 2 && x.name.toLowerCase() === "__substg1.0_10090102");
+    if (rtfE) {
+      try {
+        let t = rtfToText(new TextDecoder("windows-1252").decode(decompressRtf(readStream(rtfE))));
+        if (/<\s*(html|body|div|table|p|span)\b/i.test(t)) t = stripHtml(t);
+        body = t;
+      } catch {}
+    }
+  }
   return {
     sub: strProp("0037") || strProp("0e1d"),
     from: name && mail && !/@/.test(name) ? `${name} <${mail}>` : (name || mail),
     rcv, mid: strProp("1035") || null,
-    body: strProp("1000") || ""
+    body
   };
 }
 
@@ -1154,7 +1271,8 @@ document.addEventListener("drop", async e => {
     return;
   }
   const html = dt.getData("text/html"), text = dt.getData("text/plain");
-  if (text || html) openRecModal(null, parseLoose(text || stripHtml(html)), "drop");
+  if (text || html) { openRecModal(null, parseLoose(text || stripHtml(html)), "drop"); return; }
+  toast("Nothing arrived with that drop. Outlook can't hand emails to the browser directly — drag the email into a desktop folder first (it saves as a .msg file), then drop that file here.");
 });
 
 async function fileToFields(f) {
@@ -1373,7 +1491,7 @@ function renderDrawer() {
 
 /* ---------------- boot ---------------- */
 
-window.__pa = { parseEml, parseMsg, parseLoose, mimeText, stripHtml, kindGuess, titleFromSub, extractSpecs, specTitle, assemble }; // console/test access
+window.__pa = { parseEml, parseMsg, parseLoose, mimeText, stripHtml, decompressRtf, rtfToText, kindGuess, titleFromSub, extractSpecs, specTitle, assemble }; // console/test access
 
 $("#btn-add").addEventListener("click", () => openRecModal(null, null, "manual"));
 addEventListener("resize", () => { clearTimeout(renderChart._t); renderChart._t = setTimeout(renderChart, 150); });
