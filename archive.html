@@ -554,8 +554,9 @@ function isDup(fields) {
   if (imid && S.recs.some(r => r.imid === imid)) return true;
   const ns = normSub(fields.sub);
   if (ns.length >= 10 && fields.rcv) {
-    const day = fields.rcv.slice(0, 10);
-    if (S.recs.some(r => normSub(r.sub) === ns && (r.rcv || "").slice(0, 10) === day)) return true;
+    // same subject within 14 days = the same announcement thread (replies roll off)
+    const t = new Date(fields.rcv).getTime();
+    if (S.recs.some(r => normSub(r.sub) === ns && r.rcv && Math.abs(new Date(r.rcv).getTime() - t) <= 14 * 864e5)) return true;
   }
   return false;
 }
